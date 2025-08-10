@@ -44,7 +44,7 @@ io.on("connection", (socket) => {
 app.use(express.json({ limit: "4mb" }));
 // app.use(cors({ origin: "*"}));
 app.use(cors({
-  origin: "https://byte-talk-nu.vercel.app",
+  origin: "https://byte-talk-frontend.vercel.app",
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"]

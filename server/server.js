@@ -42,7 +42,13 @@ io.on("connection", (socket) => {
 
 //Middleware setup
 app.use(express.json({ limit: "4mb" }));
-app.use(cors({ origin: "*"}));
+// app.use(cors({ origin: "*"}));
+app.use(cors({
+  origin: "https://byte-talk-frontend.vercel.app",
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"]
+}));
 
 app.use("/api/status", (req, res) => {
   res.send("server is running");

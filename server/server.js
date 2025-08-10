@@ -47,7 +47,7 @@ app.use(cors({
   origin: "https://byte-talk-frontend.vercel.app",
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"]
+  allowedHeaders: ["Content-Type", "token"]
 }));
 
 app.use("/api/status", (req, res) => {

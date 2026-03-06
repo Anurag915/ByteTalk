@@ -15,11 +15,15 @@ const app = express();
 const server = http.createServer(app);
 
 //initialise socket.io server
-export const io = new Server(server, { cors: { origin: "*" } });
-
+export const io = new Server(server, {
+  cors: {
+    origin: ["https://byte-talk-frontend.vercel.app", "http://localhost:5173"],
+    credentials: true,
+  },
+});
 //store online user
 
-export const useSocketMap = {}; //{userId:sockedId}
+export const userSocketMap = {};
 
 //socket.io connection handler
 
@@ -27,28 +31,49 @@ io.on("connection", (socket) => {
   const userId = socket.handshake.query.userId;
   console.log("User connected", userId);
   if (userId) {
-    useSocketMap[userId] = socket.id;
+    userSocketMap[userId] = socket.id;
   }
   //emit online user to all connected clients
 
-  io.emit("getOnlineUsers", Object.keys(useSocketMap));
+  io.emit("getOnlineUsers", Object.keys(userSocketMap));
+
+  // Typing indicator events
+  socket.on("typing", ({ senderId, receiverId }) => {
+    console.log(`SERVER: ${senderId} is typing to ${receiverId}`);
+    const receiverSocketId = userSocketMap[receiverId];
+    if (receiverSocketId) {
+      io.to(receiverSocketId).emit("typing", { senderId });
+    } else {
+      console.log(`SERVER: Receiver socket not found for ${receiverId}`);
+    }
+  });
+
+  socket.on("stopTyping", ({ senderId, receiverId }) => {
+    console.log(`SERVER: ${senderId} stopped typing to ${receiverId}`);
+    const receiverSocketId = userSocketMap[receiverId];
+    if (receiverSocketId) {
+      io.to(receiverSocketId).emit("stopTyping", { senderId });
+    }
+  });
 
   socket.on("disconnect", () => {
     console.log("User disconnected", userId);
-    delete useSocketMap[userId];
-    io.emit("getOnlineUsers", Object.keys(useSocketMap));
+    delete userSocketMap[userId];
+    io.emit("getOnlineUsers", Object.keys(userSocketMap));
   });
 });
 
 //Middleware setup
 app.use(express.json({ limit: "4mb" }));
 // app.use(cors({ origin: "*"}));
-app.use(cors({
-  origin: "https://byte-talk-frontend.vercel.app",
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "token"]
-}));
+app.use(
+  cors({
+    origin: ["https://byte-talk-frontend.vercel.app", "http://localhost:5173"],
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "token"],
+  }),
+);
 
 app.use("/api/status", (req, res) => {
   res.send("server is running");

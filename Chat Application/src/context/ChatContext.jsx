@@ -114,6 +114,8 @@ export const ChatProvider = ({ children }) => {
   const [users, setUsers] = useState(null); // Initialize as null to better track loading state
   const [selectedUser, setSelectedUser] = useState(null);
   const [unseenMessages, setUnseenMessages] = useState({});
+  const [isRightPanelOpen, setIsRightPanelOpen] = useState(false);
+  const [typingUsers, setTypingUsers] = useState({}); // { userId: boolean }
 
   const selectedUserRef = useRef(selectedUser);
   useEffect(() => {
@@ -143,7 +145,7 @@ export const ChatProvider = ({ children }) => {
       } else {
         console.error(
           "API call was successful but data.user is not an array or success is false.",
-          data
+          data,
         );
         setUsers([]); // Set to empty array to prevent infinite loading state
       }
@@ -175,10 +177,22 @@ export const ChatProvider = ({ children }) => {
     try {
       const { data } = await axios.post(
         `/api/messages/send/${selectedUser._id}`,
-        messageData
+        messageData,
       );
       if (data.success) {
         setMessages((prevMessages) => [...prevMessages, data.newMessage]);
+
+        // Move active user to top
+        setUsers((prevUsers) => {
+          if (!prevUsers) return prevUsers;
+          const userIndex = prevUsers.findIndex(
+            (u) => u._id === selectedUser._id,
+          );
+          if (userIndex <= 0) return prevUsers;
+          const newUsers = [...prevUsers];
+          const [user] = newUsers.splice(userIndex, 1);
+          return [user, ...newUsers];
+        });
       } else {
         toast.error(data.message);
       }
@@ -198,10 +212,9 @@ export const ChatProvider = ({ children }) => {
 
   const handleNewMessage = useCallback(
     (newMessage) => {
-      if (
-        selectedUserRef.current &&
-        newMessage.senderId === selectedUserRef.current._id
-      ) {
+      const senderId = newMessage.senderId;
+
+      if (selectedUserRef.current && senderId === selectedUserRef.current._id) {
         newMessage.seen = true;
         setMessages((prev) => [...prev, newMessage]);
         axios
@@ -210,22 +223,52 @@ export const ChatProvider = ({ children }) => {
       } else {
         setUnseenMessages((prev) => ({
           ...prev,
-          [newMessage.senderId]: (prev[newMessage.senderId] || 0) + 1,
+          [senderId]: (prev[senderId] || 0) + 1,
         }));
       }
+
+      // Bubble user to top of sidebar
+      setUsers((prevUsers) => {
+        if (!prevUsers) return prevUsers;
+        const userIndex = prevUsers.findIndex((u) => u._id === senderId);
+        if (userIndex === -1) return prevUsers; // In case user list isn't fully loaded or fetched yet
+        if (userIndex === 0) return prevUsers; // Already at top
+
+        const newUsers = [...prevUsers];
+        const [user] = newUsers.splice(userIndex, 1);
+        return [user, ...newUsers];
+      });
     },
-    [axios]
+    [axios],
   );
+
+  const handleTyping = useCallback(({ senderId }) => {
+    console.log("CLIENT: Received typing event from:", senderId);
+    setTypingUsers((prev) => ({ ...prev, [senderId]: true }));
+  }, []);
+
+  const handleStopTyping = useCallback(({ senderId }) => {
+    console.log("CLIENT: Received stopTyping event from:", senderId);
+    setTypingUsers((prev) => {
+      const newState = { ...prev };
+      delete newState[senderId];
+      return newState;
+    });
+  }, []);
 
   useEffect(() => {
     if (!socket) return;
 
     socket.on("newMessage", handleNewMessage);
+    socket.on("typing", handleTyping);
+    socket.on("stopTyping", handleStopTyping);
 
     return () => {
       socket.off("newMessage", handleNewMessage);
+      socket.off("typing", handleTyping);
+      socket.off("stopTyping", handleStopTyping);
     };
-  }, [socket, handleNewMessage]);
+  }, [socket, handleNewMessage, handleTyping, handleStopTyping]);
 
   const value = {
     messages,
@@ -238,6 +281,10 @@ export const ChatProvider = ({ children }) => {
     sendMessage,
     unseenMessages,
     clearUnseenMessages,
+    isRightPanelOpen,
+    setIsRightPanelOpen,
+    typingUsers,
+    socket,
   };
 
   return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>;

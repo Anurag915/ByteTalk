@@ -116,6 +116,9 @@ export const ChatProvider = ({ children }) => {
   const [unseenMessages, setUnseenMessages] = useState({});
   const [isRightPanelOpen, setIsRightPanelOpen] = useState(false);
   const [typingUsers, setTypingUsers] = useState({}); // { userId: boolean }
+  const [selectedMessageInfo, setSelectedMessageInfo] = useState(null);
+  const [isMessageInfoOpen, setIsMessageInfoOpen] = useState(false);
+  const [editingMessage, setEditingMessage] = useState(null);
 
   const selectedUserRef = useRef(selectedUser);
   useEffect(() => {
@@ -175,6 +178,7 @@ export const ChatProvider = ({ children }) => {
       return;
     }
     try {
+      // messageData can now contain { text, image, audio }
       const { data } = await axios.post(
         `/api/messages/send/${selectedUser._id}`,
         messageData,
@@ -210,7 +214,56 @@ export const ChatProvider = ({ children }) => {
     });
   };
 
-  const handleNewMessage = useCallback(
+  // Toggle a reaction on a message
+  const toggleReaction = async (messageId, emoji) => {
+    try {
+      const { data } = await axios.put(`/api/messages/react/${messageId}`, {
+        emoji,
+      });
+      if (data.success) {
+        setMessages((prevMessages) =>
+          prevMessages.map((msg) =>
+            msg._id === messageId ? { ...msg, reactions: data.reactions } : msg,
+          ),
+        );
+      }
+    } catch (error) {
+      toast.error(error?.response?.data?.message || error.message);
+    }
+  };
+
+  const updateMessage = async (messageId, newText) => {
+    try {
+      const { data } = await axios.put(`/api/messages/edit/${messageId}`, {
+        text: newText,
+      });
+      if (data.success) {
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg._id === messageId ? { ...msg, text: newText } : msg,
+          ),
+        );
+        toast.success("Message updated");
+        setEditingMessage(null);
+      }
+    } catch (error) {
+      toast.error(error?.response?.data?.message || error.message);
+    }
+  };
+
+  const deleteMessage = async (messageId) => {
+    try {
+      const { data } = await axios.delete(`/api/messages/${messageId}`);
+      if (data.success) {
+        setMessages((prev) => prev.filter((msg) => msg._id !== messageId));
+        toast.success("Message deleted");
+      }
+    } catch (error) {
+      toast.error(error?.response?.data?.message || error.message);
+    }
+  };
+
+   const handleNewMessage = useCallback(
     (newMessage) => {
       const senderId = newMessage.senderId;
 
@@ -254,17 +307,46 @@ export const ChatProvider = ({ children }) => {
     });
   }, []);
 
+  const handleMessageReaction = useCallback(({ messageId, reactions }) => {
+    setMessages((prevMessages) =>
+      prevMessages.map((msg) =>
+        msg._id === messageId ? { ...msg, reactions } : msg,
+      ),
+    );
+
+    // If the message being reacted to is currently viewed in info panel, update it
+    setSelectedMessageInfo((prev) =>
+      prev && prev._id === messageId ? { ...prev, reactions } : prev,
+    );
+  }, []);
+
+  const handleMessageUpdate = useCallback(({ messageId, text }) => {
+    setMessages((prev) =>
+      prev.map((msg) => (msg._id === messageId ? { ...msg, text } : msg)),
+    );
+  }, []);
+
+  const handleMessageDelete = useCallback((messageId) => {
+    setMessages((prev) => prev.filter((msg) => msg._id !== messageId));
+  }, []);
+
   useEffect(() => {
     if (!socket) return;
 
     socket.on("newMessage", handleNewMessage);
     socket.on("typing", handleTyping);
     socket.on("stopTyping", handleStopTyping);
+    socket.on("messageReaction", handleMessageReaction);
+    socket.on("messageUpdate", handleMessageUpdate);
+    socket.on("messageDelete", handleMessageDelete);
 
     return () => {
       socket.off("newMessage", handleNewMessage);
       socket.off("typing", handleTyping);
       socket.off("stopTyping", handleStopTyping);
+      socket.off("messageReaction", handleMessageReaction);
+      socket.off("messageUpdate", handleMessageUpdate);
+      socket.off("messageDelete", handleMessageDelete);
     };
   }, [socket, handleNewMessage, handleTyping, handleStopTyping]);
 
@@ -283,6 +365,15 @@ export const ChatProvider = ({ children }) => {
     setIsRightPanelOpen,
     typingUsers,
     socket,
+    toggleReaction,
+    selectedMessageInfo,
+    setSelectedMessageInfo,
+    isMessageInfoOpen,
+    setIsMessageInfoOpen,
+    editingMessage,
+    setEditingMessage,
+    updateMessage,
+    deleteMessage,
   };
 
   return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>;

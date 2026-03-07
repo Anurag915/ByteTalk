@@ -2,6 +2,7 @@ import React, { useContext } from "react";
 import Sidebar from "../components/Sidebar.jsx";
 import ChatContainer from "../components/ChatContainer.jsx";
 import RightSidebar from "../components/RightSidebar.jsx";
+import MessageInfo from "../components/MessageInfo.jsx";
 import { useState } from "react";
 import { AuthContext } from "../context/AuthContext.jsx";
 import { ChatContext } from "../context/ChatContext.jsx";
@@ -15,6 +16,7 @@ const HomePage = () => {
         <Sidebar />
         <ChatContainer />
         <RightSidebar />
+        <MessageInfo />
       </div>
     </div>
   );

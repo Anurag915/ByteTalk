@@ -147,6 +147,7 @@ const Sidebar = () => {
     getMessages,
     unseenMessages,
     clearUnseenMessages,
+    typingUsers,
   } = useContext(ChatContext);
 
   const { logout, onlineUsers } = useContext(AuthContext);
@@ -169,19 +170,19 @@ const Sidebar = () => {
   const filteredUsers = searchInput
     ? (users || []).filter(
         (
-          user // Added fallback here to prevent crash if users is undefined
-        ) => user.fullName.toLowerCase().includes(searchInput.toLowerCase())
+          user, // Added fallback here to prevent crash if users is undefined
+        ) => user.fullName.toLowerCase().includes(searchInput.toLowerCase()),
       )
     : users;
 
   return (
     // Added a check to hide sidebar on mobile when a user is selected
     <div
-      className={`bg-[#8185B2]/10 h-full p-5 rounded-r-xl overflow-y-auto text-white ${
+      className={`bg-white/5 h-full flex flex-col border-r border-white/10 overflow-hidden text-white transition-all duration-300 ${
         selectedUser ? "max-md:hidden" : ""
       }`}
     >
-      <div className="pb-5">
+      <div className="p-5 flex-shrink-0 border-b border-white/5">
         <div className="flex justify-between items-center">
           <img src={assets.logo} alt="logo" className="max-w-40" />
           <div className="relative py-2 group">
@@ -216,8 +217,7 @@ const Sidebar = () => {
           />
         </div>
       </div>
-      <div className="flex flex-col gap-1">
-        {/* FIX: Added a fallback to an empty array to prevent map of undefined */}
+      <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-1 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
         {(filteredUsers || []).map((user) => {
           const isOnline = onlineUsers.includes(user._id);
           return (
@@ -252,10 +252,18 @@ const Sidebar = () => {
                 </div>
                 <span
                   className={`text-xs ${
-                    isOnline ? "text-green-400" : "text-neutral-400"
+                    typingUsers[user._id]
+                      ? "text-violet-400 animate-pulse italic"
+                      : isOnline
+                        ? "text-green-400"
+                        : "text-neutral-400"
                   }`}
                 >
-                  {isOnline ? "Online" : "Offline"}
+                  {typingUsers[user._id]
+                    ? "typing..."
+                    : isOnline
+                      ? "Online"
+                      : "Offline"}
                 </span>
               </div>
             </div>

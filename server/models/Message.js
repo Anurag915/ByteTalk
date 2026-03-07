@@ -22,6 +22,8 @@ const messageSchema = new mongoose.Schema(
         emoji: { type: String },
       },
     ],
+    isPinned: { type: Boolean, default: false },
+    pinExpiry: { type: Date },
   },
   { timestamps: true }
 );

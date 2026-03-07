@@ -39,17 +39,13 @@ io.on("connection", (socket) => {
 
   // Typing indicator events
   socket.on("typing", ({ senderId, receiverId }) => {
-    console.log(`SERVER: ${senderId} is typing to ${receiverId}`);
     const receiverSocketId = userSocketMap[receiverId];
     if (receiverSocketId) {
       io.to(receiverSocketId).emit("typing", { senderId });
-    } else {
-      console.log(`SERVER: Receiver socket not found for ${receiverId}`);
     }
   });
 
   socket.on("stopTyping", ({ senderId, receiverId }) => {
-    console.log(`SERVER: ${senderId} stopped typing to ${receiverId}`);
     const receiverSocketId = userSocketMap[receiverId];
     if (receiverSocketId) {
       io.to(receiverSocketId).emit("stopTyping", { senderId });

@@ -147,6 +147,7 @@ const Sidebar = () => {
     getMessages,
     unseenMessages,
     clearUnseenMessages,
+    typingUsers,
   } = useContext(ChatContext);
 
   const { logout, onlineUsers } = useContext(AuthContext);
@@ -251,10 +252,18 @@ const Sidebar = () => {
                 </div>
                 <span
                   className={`text-xs ${
-                    isOnline ? "text-green-400" : "text-neutral-400"
+                    typingUsers[user._id]
+                      ? "text-violet-400 animate-pulse italic"
+                      : isOnline
+                        ? "text-green-400"
+                        : "text-neutral-400"
                   }`}
                 >
-                  {isOnline ? "Online" : "Offline"}
+                  {typingUsers[user._id]
+                    ? "typing..."
+                    : isOnline
+                      ? "Online"
+                      : "Offline"}
                 </span>
               </div>
             </div>

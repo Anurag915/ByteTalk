@@ -243,12 +243,10 @@ export const ChatProvider = ({ children }) => {
   );
 
   const handleTyping = useCallback(({ senderId }) => {
-    console.log("CLIENT: Received typing event from:", senderId);
     setTypingUsers((prev) => ({ ...prev, [senderId]: true }));
   }, []);
 
   const handleStopTyping = useCallback(({ senderId }) => {
-    console.log("CLIENT: Received stopTyping event from:", senderId);
     setTypingUsers((prev) => {
       const newState = { ...prev };
       delete newState[senderId];

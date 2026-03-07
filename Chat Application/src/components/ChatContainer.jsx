@@ -30,7 +30,6 @@ const ChatContainer = () => {
     if (!socket || !selectedUser) return;
 
     // Send typing event
-    console.log("CLIENT: Emitting typing event to:", selectedUser._id);
     socket.emit("typing", {
       senderId: authUser._id,
       receiverId: selectedUser._id,
@@ -210,13 +209,6 @@ const ChatContainer = () => {
 
       {/* Bottom area */}
       <div className="p-4 md:p-6 border-t border-white/10 bg-[#0F0C1D]/40 backdrop-blur-xl flex-shrink-0 relative">
-        {/* Real-time Typing Indicator Bubble */}
-        {isUserTyping && (
-          <div className="absolute -top-7 left-10 text-[11px] text-violet-400 animate-pulse italic">
-            {selectedUser.fullName} is typing...
-          </div>
-        )}
-
         <div className="max-w-5xl mx-auto flex items-center gap-3">
           <div className="flex-1 flex items-center bg-white/5 border border-white/10 px-4 py-1.5 rounded-2xl focus-within:border-violet-500/50 transition-all duration-200">
             <input

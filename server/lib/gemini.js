@@ -40,3 +40,59 @@ export const generateSmartReplies = async (messageContent) => {
     return ["Okay", "Got it", "Thanks!"]; // Fallback replies
   }
 };
+
+/**
+ * Generates a concise, bulleted summary of a chat conversation.
+ * @param {Array} messages - Array of message objects containing text and sender info.
+ * @returns {Promise<string>} - The generated summary text.
+ */
+export const generateChatSummary = async (messages) => {
+  try {
+    if (!messages || messages.length === 0) return "No messages to summarize.";
+
+    const conversationText = messages
+      .map((msg) => `${msg.senderId?.fullName || "User"}: ${msg.text || "[Media Message]"}`)
+      .join("\n");
+
+    const prompt = `You are a helpful assistant that summarizes chat conversations.
+    Based on the following chat history, provide a concise summary of the most important points.
+    Use bullet points and keep it professional but conversational.
+    
+    Chat History:
+    ${conversationText}`;
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    return response.text();
+  } catch (error) {
+    console.error("Error generating chat summary:", error);
+    return "Failed to generate summary. Please try again later.";
+  }
+};
+
+/**
+ * Analyzes a single message to extract tasks, deadlines, and meetings.
+ * @param {string} text - The message text to analyze.
+ * @returns {Promise<string>} - The structured analysis result.
+ */
+export const analyzeMessageContent = async (text) => {
+  try {
+    if (!text) return "No text provided for analysis.";
+
+    const prompt = `You are a productivity assistant. Analyze the following chat message and extract any mentioned:
+    - Tasks (actions to be done)
+    - Deadlines (specific dates or times for tasks)
+    - Meetings or Appointments (events with participants and times)
+    
+    Format the output clearly with headers and bullet points. If no actionable information is found, say "No tasks or deadlines found in this message."
+    
+    Message: "${text}"`;
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    return response.text();
+  } catch (error) {
+    console.error("Error analyzing message content:", error);
+    return "Failed to analyze message content. Please try again later.";
+  }
+};

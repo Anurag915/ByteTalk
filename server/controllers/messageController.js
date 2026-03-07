@@ -385,3 +385,52 @@ export const getAIReplies = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+// Get chat summary
+export const getChatSummary = async (req, res) => {
+  try {
+    const { userToChatId } = req.params;
+    const myId = req.user._id;
+
+    const Message = (await import("../models/Message.js")).default;
+    const { generateChatSummary } = await import("../lib/gemini.js");
+
+    // Get the last 100 messages for summarization
+    const messages = await Message.find({
+      $or: [
+        { senderId: myId, receiverId: userToChatId },
+        { senderId: userToChatId, receiverId: myId },
+      ],
+    })
+      .sort({ createdAt: -1 })
+      .limit(100)
+      .populate("senderId", "fullName");
+
+    // Reverse to get chronological order
+    const chronologicalMessages = messages.reverse();
+
+    const summary = await generateChatSummary(chronologicalMessages);
+    res.json({ success: true, summary });
+  } catch (error) {
+    console.error("Error in getChatSummary controller:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// Analyze a specific message using AI
+export const getAIAnalysis = async (req, res) => {
+  try {
+    const { text } = req.body;
+    if (!text) {
+      return res.status(400).json({ success: false, message: "Message text is required" });
+    }
+
+    const { analyzeMessageContent } = await import("../lib/gemini.js");
+    const analysis = await analyzeMessageContent(text);
+    
+    res.json({ success: true, analysis });
+  } catch (error) {
+    console.error("Error in getAIAnalysis controller:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};

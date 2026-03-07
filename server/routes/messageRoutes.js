@@ -13,6 +13,8 @@ import {
   pinMessage,
   unpinMessage,
   getAIReplies,
+  getChatSummary,
+  getAIAnalysis,
 } from "../controllers/messageController.js";
 const messageRouter = express.Router();
 messageRouter.get("/users", protectRoute, getUsersForSidebar);
@@ -25,6 +27,8 @@ messageRouter.put("/pin/:id", protectRoute, pinMessage);
 messageRouter.put("/unpin/:id", protectRoute, unpinMessage);
 messageRouter.delete("/:id", protectRoute, deleteMessage);
 messageRouter.post("/ai-replies", protectRoute, getAIReplies);
+messageRouter.get("/summarize/:userToChatId", protectRoute, getChatSummary);
+messageRouter.post("/analyze", protectRoute, getAIAnalysis);
 export default messageRouter;
 
 

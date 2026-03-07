@@ -120,6 +120,10 @@ export const ChatProvider = ({ children }) => {
   const [isMessageInfoOpen, setIsMessageInfoOpen] = useState(false);
   const [editingMessage, setEditingMessage] = useState(null);
   const [smartReplies, setSmartReplies] = useState([]);
+  const [chatSummary, setChatSummary] = useState(null);
+  const [isSummarizing, setIsSummarizing] = useState(false);
+  const [analysisResult, setAnalysisResult] = useState(null);
+  const [isAnalyzingMessage, setIsAnalyzingMessage] = useState(false);
 
   const selectedUserRef = useRef(selectedUser);
   useEffect(() => {
@@ -353,6 +357,36 @@ export const ChatProvider = ({ children }) => {
     [axios, getSmartReplies],
   );
 
+  const summarizeChat = async () => {
+    if (!selectedUser) return;
+    setIsSummarizing(true);
+    try {
+      const { data } = await axios.get(`/api/messages/summarize/${selectedUser._id}`);
+      if (data.success) {
+        setChatSummary(data.summary);
+      }
+    } catch (error) {
+      toast.error(error?.response?.data?.message || "Failed to generate summary");
+    } finally {
+      setIsSummarizing(false);
+    }
+  };
+
+  const analyzeMessage = async (text) => {
+    if (!text) return;
+    setIsAnalyzingMessage(true);
+    try {
+      const { data } = await axios.post("/api/messages/analyze", { text });
+      if (data.success) {
+        setAnalysisResult(data.analysis);
+      }
+    } catch (error) {
+      toast.error(error?.response?.data?.message || "Failed to analyze message");
+    } finally {
+      setIsAnalyzingMessage(false);
+    }
+  };
+
   const handleTyping = useCallback(({ senderId }) => {
     setTypingUsers((prev) => ({ ...prev, [senderId]: true }));
   }, []);
@@ -449,6 +483,14 @@ export const ChatProvider = ({ children }) => {
     unpinMessage,
     smartReplies,
     setSmartReplies,
+    chatSummary,
+    setChatSummary,
+    isSummarizing,
+    summarizeChat,
+    analysisResult,
+    setAnalysisResult,
+    isAnalyzingMessage,
+    analyzeMessage,
   };
 
   return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>;

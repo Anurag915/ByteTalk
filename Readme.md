@@ -1,87 +1,107 @@
-# 🚀 ByteTalk - Real-Time Chat Application
+# 🚀 ByteTalk - AI-Powered Real-Time Chat
 
-ByteTalk is a sleek, modern, and lightning-fast chat platform that lets you connect with friends, share images, and chat in real-time — all wrapped in a beautifully responsive UI.
+ByteTalk is a premium, lightning-fast chat application featuring **Clerk Authentication**, **Gemini AI** integration, and a modern **WhatsApp-style** interface. Connect effortlessly, chat in real-time, and leverage AI for smart replies and conversation summaries.
 
-## ✨ Features
+## ✨ Premium Features
 
-* 🔐 **User Authentication**: Secure login, logout, and registration with JWT.
-* ⚡ **Real-Time Messaging**: Chat instantly with Socket.IO.
-* 🖼 **Image Sharing**: Upload and send images effortlessly.
-* 🔍 **User Search**: Find friends instantly by their name.
-* 🛠 **Profile Customization**: Update your name, avatar, and more.
+### 🔐 Authentication & Security
+- **Clerk Integration**: Industry-standard authentication (Email/Password, Social logins).
+- **Secure Sessions**: Protected routes and real-time Socket.io authentication via Clerk tokens.
+- **Landing Page**: A beautiful, non-intrusive entry point for new users.
+- **CSP Protected**: Robust Content Security Policy for secure script and media loading.
 
-## 🛠 Tech Stack
+### ⚡ Real-Time Messaging (Socket.io)
+- **Instant Chat**: Lightning-fast message delivery and typing indicators.
+- **Online Presence**: Real-time tracking of users' online/offline status.
+- **Voice Messages**: Record and send voice notes with a built-in interactive wave-visualizer.
+- **Image Sharing**: High-speed image uploads and sharing via Cloudinary.
 
-* **Frontend**: React.js + Tailwind CSS
-* **Backend**: Node.js + Express.js
-* **Database**: MongoDB
-* **Real-Time**: Socket.IO
-* **Authentication**: JWT
-* **Image Storage**: Cloudinary (or similar)
+### 🧠 Gemini AI Integration
+- **Smart Replies**: Get AI-generated response suggestions instantly during your chats.
+- **Conversation Summary**: Summarize long chat histories into concise bullet points.
+- **Message Analysis**: Deep dive into individual messages for AI-powered insights.
+
+### 🎨 WhatsApp-Style UI/UX
+- **Multi-Section Sidebar**: Navigate easily between **Chats**, **Profile**, **Calls**, and **Shared Media**.
+- **Date Grouping**: Messages are organized by date (Today, Yesterday, etc.) with modern separators.
+- **Pinning & Reactions**: Keep important messages at the top and react with emojis.
+- **Direct Profiles**: Click any avatar in the header to view user details in a sleek right sidebar.
+
+## 🛠️ Tech Stack
+
+- **Frontend**: React.js + Tailwind CSS + Lucide React
+- **Backend**: Node.js + Express.js + Mongoose
+- **Database**: MongoDB (Atlas)
+- **Real-Time**: Socket.io
+- **Authentication**: Clerk SDK
+- **AI Engine**: Google Gemini (Flash 1.5)
+- **Media Storage**: Cloudinary (Image & Audio)
+- **Styling**: Vanilla CSS (Premium Glassmorphism & Micro-animations)
 
 ## 🚀 Getting Started
 
 ### Prerequisites
-
-* Node.js installed
-* MongoDB URI
-* Cloudinary credentials (if using for images)
+- Node.js (v18+)
+- MongoDB Atlas account
+- Clerk account & API keys
+- Gemini AI API key
+- Cloudinary account
 
 ### Installation
 
 ```bash
-# Clone the repo
+# Clone the repository
 git clone <repo-url>
-cd ByteCode
+cd ByteTalk
 
-# Backend
+# Install Backend dependencies
 cd server
 npm install
 
-# Frontend
-cd ../Chat Application
+# Install Frontend dependencies
+cd "../Chat Application"
 npm install
 ```
 
 ### Environment Variables
 
-Backend `.env`:
-
+#### Backend (`server/.env`)
 ```env
 PORT=5000
-MONGO_URI=<your-mongo-uri>
-JWT_SECRET=<your-jwt-secret>
-CLOUDINARY_URL=<your-cloudinary-url>
+MONGODB_URI=<your-mongodb-uri>
+CLERK_SECRET_KEY=<your-clerk-secret-key>
+CLOUDINARY_CLOUD_NAME=<your-name>
+CLOUDINARY_API_KEY=<your-key>
+CLOUDINARY_API_SECRET=<your-secret>
+GEMINI_API_KEY=<your-google-ai-key>
 ```
 
-Frontend `.env`:
-
+#### Frontend (`Chat Application/.env`)
 ```env
-REACT_APP_API_URL=<your-backend-api-url>
+VITE_CLERK_PUBLISHABLE_KEY=<your-clerk-publishable-key>
+VITE_BACKEND_URL=http://localhost:5000
+VITE_CLOUDINARY_CLOUD_NAME=<your-name>
 ```
 
 ### Running Locally
 
 ```bash
-# Backend
+# Terminal 1: Start Backend
 cd server
-npm run dev
-
-# Frontend
-cd ../client
 npm start
+
+# Terminal 2: Start Frontend
+cd "Chat Application"
+npm run dev
 ```
 
-## 📡 API Endpoints
+## 📡 Key API Routes
 
-* **POST /api/auth/register** → Register a new user
-* **POST /api/auth/login** → Login and receive a JWT
-* **POST /api/auth/logout** → Logout the user
-* **GET /api/users/search?name=** → Search users by name
-* **PUT /api/users/profile** → Update user profile
-* **POST /api/messages** → Send a message
-* **GET /api/messages/\:userId** → Get messages with a specific user
+- **GET /api/auth/check**: Syncs Clerk user with local MongoDB and returns user state.
+- **PUT /api/auth/update-profile**: Updates user bio, name, or profile picture.
+- **GET /api/messages/:id**: Fetches conversation history between users.
+- **POST /api/messages/send/:id**: Sends a new message (text, image, or audio).
+- **POST /api/messages/summarize**: Generates AI summaries for the current chat.
 
 ## 📜 License
-
 MIT License

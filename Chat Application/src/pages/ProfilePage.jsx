@@ -7,8 +7,16 @@ const ProfilePage = () => {
   const { authUser, updateProfile } = useContext(AuthContext);
   const [selectedImage, setSelectedImage] = useState(null);
   const navigate = useNavigate();
-  const [name, setname] = useState(authUser.fullName);
-  const [bio, setBio] = useState(authUser.bio);
+  const [name, setname] = useState(authUser?.fullName || "");
+  const [bio, setBio] = useState(authUser?.bio || "");
+
+  if (!authUser) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-white">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-violet-500"></div>
+      </div>
+    );
+  }
   const onSubmitHandler = async (e) => {
     e.preventDefault();
     // Handle profile update logic here

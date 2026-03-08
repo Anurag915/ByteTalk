@@ -1,5 +1,5 @@
 import express from "express";
-import { protectRoute } from "../middleware/auth.js";
+import { protectRoute } from "../middleware/clerk.js";
 import User from "../models/User.js";
 
 import {

@@ -49,7 +49,19 @@ const LoginPage = () => {
   return (
     <div className="min-h-screen bg-cover bg-center flex items-center justify-center gap-8 sm:justify-evenly max-sm:flex-col backdrop-blur-xl">
       {/* left  */}
-      <img src={assets.logo_big} alt="" className="w-[min(30vw,250px)]" />
+      <div className="flex flex-col items-center gap-4 transition-all duration-500 hover:scale-105 group/logo">
+        <img 
+          src={assets.logo_icon} 
+          alt="logo" 
+          className="w-[120px] md:w-[160px] object-contain transition-all duration-300" 
+        />
+        <h1 className="text-5xl md:text-7xl font-black text-white tracking-tighter">
+          ByteTalk
+        </h1>
+        <p className="text-gray-400 text-lg md:text-xl font-medium tracking-wide opacity-80 group-hover/logo:opacity-100 transition-opacity">
+          Connect effortlessly.
+        </p>
+      </div>
       {/* right */}
       <form
         onSubmit={onSubmitHandler}

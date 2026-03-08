@@ -184,7 +184,16 @@ const Sidebar = () => {
     >
       <div className="p-5 flex-shrink-0 border-b border-white/5">
         <div className="flex justify-between items-center">
-          <img src={assets.logo} alt="logo" className="max-w-40" />
+          <div className="flex items-center gap-3 p-3 px-1 transition-all duration-300 group/logo">
+            <img 
+              src={assets.logo_icon} 
+              alt="logo" 
+              className="w-10 h-10 object-contain transition-all duration-300 hover:scale-105" 
+            />
+            <span className="text-2xl font-black text-white tracking-tighter">
+              ByteTalk
+            </span>
+          </div>
           <div className="relative py-2 group">
             <img
               src={assets.menu_icon}

@@ -10,6 +10,7 @@ import messageRouter from "./routes/messageRoutes.js";
 import { Server } from "socket.io";
 import { createClerkClient } from "@clerk/clerk-sdk-node";
 import User from "./models/User.js";
+import { log } from "console";
 
 const clerkClient = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
 //create express app
@@ -149,13 +150,14 @@ app.use("/api/messages", messageRouter);
 
 await connectDB();
 
-if (process.env.NODE_ENV != "production") {
-  const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5000;
 
-  server.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-  });
-}
+server.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+  console.log("Socket server is running on port", PORT);
+});
+
+
 
 //export server function for vercel
 export default server;

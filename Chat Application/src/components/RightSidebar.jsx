@@ -101,17 +101,6 @@ const RightSidebar = () => {
           </div>
         </div>
 
-        <div className="w-full p-6 border-t border-white/5 flex-shrink-0 bg-white/5">
-          <button
-            onClick={() => {
-              logout();
-              setIsRightPanelOpen(false);
-            }}
-            className="w-full bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 py-3 rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-95 text-sm font-medium"
-          >
-            Logout
-          </button>
-        </div>
       </div>
     </>
   );

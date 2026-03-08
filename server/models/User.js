@@ -9,9 +9,14 @@ const userSchema = new mongoose.Schema({
         required: true,
         unique: true,
     },
-    password: {
+    clerkId: {
         type: String,
         required: true,
+        unique: true,
+    },
+    password: {
+        type: String,
+        required: false,
     },
     profilePic:{
         type: String,

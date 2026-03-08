@@ -119,6 +119,12 @@ export const ChatProvider = ({ children }) => {
   const [selectedMessageInfo, setSelectedMessageInfo] = useState(null);
   const [isMessageInfoOpen, setIsMessageInfoOpen] = useState(false);
   const [editingMessage, setEditingMessage] = useState(null);
+  const [smartReplies, setSmartReplies] = useState([]);
+  const [chatSummary, setChatSummary] = useState(null);
+  const [isSummarizing, setIsSummarizing] = useState(false);
+  const [analysisResult, setAnalysisResult] = useState(null);
+  const [isAnalyzingMessage, setIsAnalyzingMessage] = useState(false);
+  const [activeSidebarSection, setActiveSidebarSection] = useState("chats"); // chats, profile, calls, media
 
   const selectedUserRef = useRef(selectedUser);
   useEffect(() => {
@@ -263,6 +269,54 @@ export const ChatProvider = ({ children }) => {
     }
   };
 
+  const getSmartReplies = useCallback(async (text) => {
+    try {
+      if (!text || text.trim().length < 2) return;
+      const { data } = await axios.post("/api/messages/ai-replies", { text: text.trim() });
+      if (data.success) {
+        setSmartReplies(data.replies);
+      }
+    } catch (error) {
+      console.error("Error fetching AI replies:", error);
+    }
+  }, [axios]);
+
+  const pinMessage = async (messageId, duration) => {
+    try {
+      const { data } = await axios.put(`/api/messages/pin/${messageId}`, {
+        duration,
+      });
+      if (data.success) {
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg._id === messageId
+              ? { ...msg, isPinned: true, pinExpiry: data.message.pinExpiry }
+              : msg,
+          ),
+        );
+        toast.success("Message pinned");
+      }
+    } catch (error) {
+      toast.error(error?.response?.data?.message || error.message);
+    }
+  };
+
+  const unpinMessage = async (messageId) => {
+    try {
+      const { data } = await axios.put(`/api/messages/unpin/${messageId}`);
+      if (data.success) {
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg._id === messageId ? { ...msg, isPinned: false, pinExpiry: null } : msg,
+          ),
+        );
+        toast.success("Message unpinned");
+      }
+    } catch (error) {
+      toast.error(error?.response?.data?.message || error.message);
+    }
+  };
+
    const handleNewMessage = useCallback(
     (newMessage) => {
       const senderId = newMessage.senderId;
@@ -273,7 +327,16 @@ export const ChatProvider = ({ children }) => {
         axios
           .put(`/api/messages/mark/${newMessage._id}`)
           .catch((err) => console.error("Failed to mark message as seen", err));
+        
+        // Generate smart replies for incoming messages from the selected user
+        if (newMessage.text) {
+          getSmartReplies(newMessage.text);
+        }
       } else {
+        if (newMessage.receiverId === selectedUserRef.current?._id) {
+          // If I sent this (from another tab), clear existing replies
+          setSmartReplies([]);
+        }
         setUnseenMessages((prev) => ({
           ...prev,
           [senderId]: (prev[senderId] || 0) + 1,
@@ -292,8 +355,38 @@ export const ChatProvider = ({ children }) => {
         return [user, ...newUsers];
       });
     },
-    [axios],
+    [axios, getSmartReplies],
   );
+
+  const summarizeChat = async () => {
+    if (!selectedUser) return;
+    setIsSummarizing(true);
+    try {
+      const { data } = await axios.get(`/api/messages/summarize/${selectedUser._id}`);
+      if (data.success) {
+        setChatSummary(data.summary);
+      }
+    } catch (error) {
+      toast.error(error?.response?.data?.message || "Failed to generate summary");
+    } finally {
+      setIsSummarizing(false);
+    }
+  };
+
+  const analyzeMessage = async (text) => {
+    if (!text) return;
+    setIsAnalyzingMessage(true);
+    try {
+      const { data } = await axios.post("/api/messages/analyze", { text });
+      if (data.success) {
+        setAnalysisResult(data.analysis);
+      }
+    } catch (error) {
+      toast.error(error?.response?.data?.message || "Failed to analyze message");
+    } finally {
+      setIsAnalyzingMessage(false);
+    }
+  };
 
   const handleTyping = useCallback(({ senderId }) => {
     setTypingUsers((prev) => ({ ...prev, [senderId]: true }));
@@ -330,6 +423,17 @@ export const ChatProvider = ({ children }) => {
     setMessages((prev) => prev.filter((msg) => msg._id !== messageId));
   }, []);
 
+  const handleMessagePinUpdate = useCallback(
+    ({ messageId, isPinned, pinExpiry }) => {
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg._id === messageId ? { ...msg, isPinned, pinExpiry } : msg,
+        ),
+      );
+    },
+    [],
+  );
+
   useEffect(() => {
     if (!socket) return;
 
@@ -339,6 +443,7 @@ export const ChatProvider = ({ children }) => {
     socket.on("messageReaction", handleMessageReaction);
     socket.on("messageUpdate", handleMessageUpdate);
     socket.on("messageDelete", handleMessageDelete);
+    socket.on("messagePinUpdate", handleMessagePinUpdate);
 
     return () => {
       socket.off("newMessage", handleNewMessage);
@@ -347,6 +452,7 @@ export const ChatProvider = ({ children }) => {
       socket.off("messageReaction", handleMessageReaction);
       socket.off("messageUpdate", handleMessageUpdate);
       socket.off("messageDelete", handleMessageDelete);
+      socket.off("messagePinUpdate", handleMessagePinUpdate);
     };
   }, [socket, handleNewMessage, handleTyping, handleStopTyping]);
 
@@ -374,6 +480,20 @@ export const ChatProvider = ({ children }) => {
     setEditingMessage,
     updateMessage,
     deleteMessage,
+    pinMessage,
+    unpinMessage,
+    smartReplies,
+    setSmartReplies,
+    chatSummary,
+    setChatSummary,
+    isSummarizing,
+    summarizeChat,
+    analysisResult,
+    setAnalysisResult,
+    isAnalyzingMessage,
+    analyzeMessage,
+    activeSidebarSection,
+    setActiveSidebarSection,
   };
 
   return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>;

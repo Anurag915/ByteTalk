@@ -2,6 +2,7 @@ import cloudinary from "../lib/cloudinary.js";
 import Message from "../models/Message.js";
 import User from "../models/User.js";
 import { io, userSocketMap } from "../server.js";
+import { generateSmartReplies } from "../lib/gemini.js";
 
 //Get all user except logged in user
 export const getUsersForSidebar = async (req, res) => {
@@ -55,6 +56,20 @@ export const getMessages = async (req, res) => {
   try {
     const { id: selectedUserId } = req.params;
     const myId = req.user._id;
+
+    // Auto-unpin expired messages
+    await Message.updateMany(
+      {
+        $or: [
+          { senderId: myId, receiverId: selectedUserId },
+          { senderId: selectedUserId, receiverId: myId },
+        ],
+        isPinned: true,
+        pinExpiry: { $lt: new Date() },
+      },
+      { isPinned: false, pinExpiry: null },
+    );
+
     const messages = await Message.find({
       $or: [
         { senderId: myId, receiverId: selectedUserId },
@@ -287,6 +302,135 @@ export const deleteMessage = async (req, res) => {
     res.json({ success: true });
   } catch (error) {
     console.log(error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+// Pin a message
+export const pinMessage = async (req, res) => {
+  try {
+    const { id: messageId } = req.params;
+    const { duration } = req.body; // duration in hours: 24, 168 (7d), 720 (30d)
+
+    const message = await Message.findById(messageId);
+    if (!message) {
+      return res.status(404).json({ success: false, message: "Message not found" });
+    }
+
+    let expiryDate = null;
+    if (duration) {
+      expiryDate = new Date(Date.now() + duration * 60 * 60 * 1000);
+    }
+
+    message.isPinned = true;
+    message.pinExpiry = expiryDate;
+    await message.save();
+
+    // Broadcast pin event
+    const receiverSocketId = userSocketMap[message.receiverId];
+    const senderSocketId = userSocketMap[message.senderId];
+
+    const pinUpdate = { messageId, isPinned: true, pinExpiry: expiryDate };
+
+    if (receiverSocketId) io.to(receiverSocketId).emit("messagePinUpdate", pinUpdate);
+    if (senderSocketId) io.to(senderSocketId).emit("messagePinUpdate", pinUpdate);
+
+    res.json({ success: true, message });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// Unpin a message
+export const unpinMessage = async (req, res) => {
+  try {
+    const { id: messageId } = req.params;
+
+    const message = await Message.findById(messageId);
+    if (!message) {
+      return res.status(404).json({ success: false, message: "Message not found" });
+    }
+
+    message.isPinned = false;
+    message.pinExpiry = null;
+    await message.save();
+
+    // Broadcast unpin event
+    const receiverSocketId = userSocketMap[message.receiverId];
+    const senderSocketId = userSocketMap[message.senderId];
+
+    const unpinUpdate = { messageId, isPinned: false };
+
+    if (receiverSocketId) io.to(receiverSocketId).emit("messagePinUpdate", unpinUpdate);
+    if (senderSocketId) io.to(senderSocketId).emit("messagePinUpdate", unpinUpdate);
+
+    res.json({ success: true, message });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+// Get AI smart replies for a message
+export const getAIReplies = async (req, res) => {
+  try {
+    const { text } = req.body;
+    if (!text) {
+      return res.status(400).json({ success: false, message: "Message text is required" });
+    }
+
+    const replies = await generateSmartReplies(text);
+    res.json({ success: true, replies });
+  } catch (error) {
+    console.error("Error in getAIReplies controller:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// Get chat summary
+export const getChatSummary = async (req, res) => {
+  try {
+    const { userToChatId } = req.params;
+    const myId = req.user._id;
+
+    const Message = (await import("../models/Message.js")).default;
+    const { generateChatSummary } = await import("../lib/gemini.js");
+
+    // Get the last 100 messages for summarization
+    const messages = await Message.find({
+      $or: [
+        { senderId: myId, receiverId: userToChatId },
+        { senderId: userToChatId, receiverId: myId },
+      ],
+    })
+      .sort({ createdAt: -1 })
+      .limit(100)
+      .populate("senderId", "fullName");
+
+    // Reverse to get chronological order
+    const chronologicalMessages = messages.reverse();
+
+    const summary = await generateChatSummary(chronologicalMessages);
+    res.json({ success: true, summary });
+  } catch (error) {
+    console.error("Error in getChatSummary controller:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// Analyze a specific message using AI
+export const getAIAnalysis = async (req, res) => {
+  try {
+    const { text } = req.body;
+    if (!text) {
+      return res.status(400).json({ success: false, message: "Message text is required" });
+    }
+
+    const { analyzeMessageContent } = await import("../lib/gemini.js");
+    const analysis = await analyzeMessageContent(text);
+    
+    res.json({ success: true, analysis });
+  } catch (error) {
+    console.error("Error in getAIAnalysis controller:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };

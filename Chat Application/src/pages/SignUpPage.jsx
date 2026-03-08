@@ -1,7 +1,7 @@
-import { SignIn } from "@clerk/clerk-react";
+import { SignUp } from "@clerk/clerk-react";
 import assets from "../assets/assets";
 
-const LoginPage = () => {
+const SignUpPage = () => {
   return (
     <div className="min-h-screen bg-cover bg-center flex items-center justify-center gap-8 sm:justify-evenly max-sm:flex-col backdrop-blur-xl">
       {/* left  */}
@@ -20,7 +20,7 @@ const LoginPage = () => {
       </div>
       {/* right */}
       <div className="animate-in fade-in slide-in-from-right-4 duration-500">
-        <SignIn 
+        <SignUp 
           appearance={{
             elements: {
               formButtonPrimary: "bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 transition-all text-sm font-bold py-3 rounded-xl shadow-lg shadow-violet-500/20 active:scale-95",
@@ -40,11 +40,11 @@ const LoginPage = () => {
               dividerText: "text-gray-500 font-bold text-xs uppercase tracking-widest"
             }
           }}
-          signUpUrl="/sign-up"
+          signInUrl="/login"
         />
       </div>
     </div>
   );
 };
 
-export default LoginPage;
+export default SignUpPage;

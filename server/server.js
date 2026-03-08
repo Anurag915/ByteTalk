@@ -23,38 +23,57 @@ export const io = new Server(server, {
 });
 //store online user
 
-export const userSocketMap = {};
+export const userSocketMap = {}; // { userId: [socketId1, socketId2...] }
 
 //socket.io connection handler
 
 io.on("connection", (socket) => {
   const userId = socket.handshake.query.userId;
-  console.log("User connected", userId);
-  if (userId) {
-    userSocketMap[userId] = socket.id;
+  console.log("User connected", userId, "Socket ID:", socket.id);
+  
+  if (userId && userId !== "undefined") {
+    if (!userSocketMap[userId]) {
+      userSocketMap[userId] = [];
+    }
+    // Add socket id if not already present
+    if (!userSocketMap[userId].includes(socket.id)) {
+      userSocketMap[userId].push(socket.id);
+    }
   }
-  //emit online user to all connected clients
-
+  
+  // emit online user IDs to all connected clients
   io.emit("getOnlineUsers", Object.keys(userSocketMap));
 
   // Typing indicator events
   socket.on("typing", ({ senderId, receiverId }) => {
-    const receiverSocketId = userSocketMap[receiverId];
-    if (receiverSocketId) {
-      io.to(receiverSocketId).emit("typing", { senderId });
+    const receiverSocketIds = userSocketMap[receiverId];
+    if (receiverSocketIds) {
+      receiverSocketIds.forEach(id => {
+        io.to(id).emit("typing", { senderId });
+      });
     }
   });
 
   socket.on("stopTyping", ({ senderId, receiverId }) => {
-    const receiverSocketId = userSocketMap[receiverId];
-    if (receiverSocketId) {
-      io.to(receiverSocketId).emit("stopTyping", { senderId });
+    const receiverSocketIds = userSocketMap[receiverId];
+    if (receiverSocketIds) {
+      receiverSocketIds.forEach(id => {
+        io.to(id).emit("stopTyping", { senderId });
+      });
     }
   });
 
   socket.on("disconnect", () => {
-    console.log("User disconnected", userId);
-    delete userSocketMap[userId];
+    console.log("User disconnected", userId, "Socket ID:", socket.id);
+    if (userId && userSocketMap[userId]) {
+      // Remove specific socket ID
+      userSocketMap[userId] = userSocketMap[userId].filter(id => id !== socket.id);
+      
+      // If no sockets left for this user, remove user from map
+      if (userSocketMap[userId].length === 0) {
+        delete userSocketMap[userId];
+      }
+    }
     io.emit("getOnlineUsers", Object.keys(userSocketMap));
   });
 });

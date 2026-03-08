@@ -1,7 +1,7 @@
 import React, { useContext, useState } from "react";
 import assets, { messagesDummyData } from "../assets/assets";
 import { useEffect } from "react";
-import { formatMessageTime } from "../lib/utils";
+import { formatMessageTime, formatDateSeparator } from "../lib/utils";
 import { useRef } from "react";
 import { ChatContext } from "../context/ChatContext";
 import { AuthContext } from "../context/AuthContext";
@@ -120,7 +120,10 @@ const ChatContainer = () => {
     analysisResult,
     setAnalysisResult,
     isAnalyzingMessage,
-    analyzeMessage,
+    activeSidebarSection,
+    setActiveSidebarSection,
+    viewedProfile,
+    setViewedProfile,
   } = useContext(ChatContext);
   const { authUser, onlineUsers } = useContext(AuthContext);
   const [input, setInput] = useState("");
@@ -478,14 +481,19 @@ const ChatContainer = () => {
       {/* Header */}
       <div className="p-4 border-b border-white/10 flex justify-between items-center backdrop-blur-md z-10">
         {/* Left: User Info Header */}
-        <div className="flex items-center gap-2">
+        <div 
+          className="flex items-center gap-2 cursor-pointer group"
+          onClick={() => {
+            setIsRightPanelOpen(true);
+          }}
+        >
           <img
             src={selectedUser.profilePic || assets.avatar_icon}
-            className="w-10 h-10 rounded-full object-cover"
+            className="w-10 h-10 rounded-full object-cover transition-transform group-hover:scale-105"
             alt="profile"
           />
           <div>
-            <p className="text-white font-medium flex items-center gap-2">
+            <p className="text-white font-medium flex items-center gap-2 group-hover:text-violet-400 transition-colors">
               {selectedUser.fullName}
               {onlineUsers.includes(selectedUser._id) && (
                 <span className="w-2.5 h-2.5 rounded-full bg-green-500 border-2 border-[#0F0C1D]"></span>
@@ -521,12 +529,6 @@ const ChatContainer = () => {
             src={assets.arrow_icon}
             className="md:hidden w-6 cursor-pointer opacity-70 hover:opacity-100"
             alt="back"
-          />
-          <img
-            onClick={() => setIsRightPanelOpen(!isRightPanelOpen)}
-            src={assets.menu_icon}
-            className="w-5 cursor-pointer opacity-70 hover:opacity-100 transition-transform active:scale-90"
-            alt="menu"
           />
         </div>
       </div>
@@ -615,107 +617,119 @@ const ChatContainer = () => {
         <div className="flex flex-col gap-4">
           {messages.map((msg, index) => {
             const isSent = String(msg.senderId) === String(authUser?._id);
+            const currentDate = new Date(msg.createdAt).toDateString();
+            const prevDate = index > 0 ? new Date(messages[index - 1].createdAt).toDateString() : null;
+            const showDateSeparator = currentDate !== prevDate;
+
             return (
-              <div
-                key={index}
-                ref={el => messageRefs.current[msg._id] = el}
-                className={`flex gap-3 transition-all duration-500 ${
-                  isSent
-                    ? "flex-row justify-end"
-                    : "flex-row-reverse justify-end"
-                }`}
-              >
-                {/* Message Content */}
+              <React.Fragment key={msg._id}>
+                {showDateSeparator && (
+                  <div className="flex justify-center my-6 sticky top-2 z-[2]">
+                    <span className="bg-[#1A162E]/80 backdrop-blur-md text-gray-400 text-[11px] font-bold px-4 py-1.5 rounded-full border border-white/5 shadow-sm uppercase tracking-wider">
+                      {formatDateSeparator(msg.createdAt)}
+                    </span>
+                  </div>
+                )}
                 <div
-                  className={`flex flex-col max-w-[80%] md:max-w-[70%] ${isSent ? "items-end" : "items-start"}`}
-                  >
-                    {msg.image ? (
-                      <div className="relative group">
-                        <img
-                          src={msg.image}
-                          className="rounded-2xl border border-white/10 shadow-lg mb-1 max-h-80 object-cover cursor-pointer hover:brightness-90 transition-all"
-                          alt="message"
+                  ref={el => messageRefs.current[msg._id] = el}
+                  className={`flex gap-3 transition-all duration-500 ${
+                    isSent
+                      ? "flex-row justify-end"
+                      : "flex-row-reverse justify-end"
+                  }`}
+                >
+                  {/* Message Content */}
+                  <div
+                    className={`flex flex-col max-w-[80%] md:max-w-[70%] ${isSent ? "items-end" : "items-start"}`}
+                    >
+                      {msg.image ? (
+                        <div className="relative group">
+                          <img
+                            src={msg.image}
+                            className="rounded-2xl border border-white/10 shadow-lg mb-1 max-h-80 object-cover cursor-pointer hover:brightness-90 transition-all"
+                            alt="message"
+                            onContextMenu={(e) => handleMessageContextMenu(e, msg, isSent)}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        </div>
+                      ) : msg.audio ? (
+                        <AudioMessage 
+                          src={msg.audio} 
+                          isSent={isSent} 
+                          formatMessageTime={formatMessageTime} 
+                          createdAt={msg.createdAt}
+                          onContextMenu={(e) => handleMessageContextMenu(e, msg, isSent)}
+                        />
+                      ) : (
+                        <div
                           onContextMenu={(e) => handleMessageContextMenu(e, msg, isSent)}
                           onClick={(e) => e.stopPropagation()}
-                        />
-                      </div>
-                    ) : msg.audio ? (
-                      <AudioMessage 
-                        src={msg.audio} 
-                        isSent={isSent} 
-                        formatMessageTime={formatMessageTime} 
-                        createdAt={msg.createdAt}
-                        onContextMenu={(e) => handleMessageContextMenu(e, msg, isSent)}
-                      />
-                    ) : (
-                      <div
-                        onContextMenu={(e) => handleMessageContextMenu(e, msg, isSent)}
-                        onClick={(e) => e.stopPropagation()}
-                        className={`p-3.5 text-sm rounded-2xl break-words shadow-sm transition-all cursor-context-menu ${
-                          isSent
-                            ? "bg-violet-600 text-white rounded-tr-none hover:bg-violet-700 cursor-pointer"
-                            : "bg-white/10 text-gray-100 rounded-tl-none border border-white/5"
-                        }`}
-                      >
-                        {msg.text}
-                      </div>
-                    )}
-                    {(msg.image || msg.text || msg.audio) && (
-                      <p className={`text-[10px] text-gray-400 mt-1.5 px-1 ${isSent ? "text-right" : "text-left"}`}>
-                        {formatMessageTime(msg.createdAt)}
-                      </p>
-                    )}
+                          className={`p-3.5 text-sm rounded-2xl break-words shadow-sm transition-all cursor-context-menu ${
+                            isSent
+                              ? "bg-violet-600 text-white rounded-tr-none hover:bg-violet-700 cursor-pointer"
+                              : "bg-white/10 text-gray-100 rounded-tl-none border border-white/5"
+                          }`}
+                        >
+                          {msg.text}
+                        </div>
+                      )}
+                      {(msg.image || msg.text || msg.audio) && (
+                        <p className={`text-[10px] text-gray-400 mt-1.5 px-1 ${isSent ? "text-right" : "text-left"}`}>
+                          {formatMessageTime(msg.createdAt)}
+                        </p>
+                      )}
 
-                    {/* Reactions Display */}
-                    {msg.reactions?.length > 0 && (
-                      <div className={`flex flex-wrap gap-1 mt-1 ${isSent ? "justify-end" : "justify-start"}`}>
-                        {Object.entries(
-                          msg.reactions.reduce((acc, curr) => {
-                            acc[curr.emoji] = (acc[curr.emoji] || 0) + 1;
-                            return acc;
-                          }, {}),
-                        ).map(([emoji, count]) => {
-                          const hasReacted = msg.reactions.some(
-                            (r) => String(r.userId) === String(authUser?._id) && r.emoji === emoji,
-                          );
-                          return (
-                            <div
-                              key={emoji}
-                              onClick={(e) => handleReactionBadgeClick(e, msg._id, emoji, hasReacted)}
-                              className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs cursor-pointer transition-all ${
-                                hasReacted
-                                  ? "bg-violet-500/30 text-violet-300"
-                                  : "bg-white/10 text-gray-400 hover:bg-white/20"
-                              }`}
-                            >
-                              <span>{emoji}</span>
-                              {count > 1 && <span>{count}</span>}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
+                      {/* Reactions Display */}
+                      {msg.reactions?.length > 0 && (
+                        <div className={`flex flex-wrap gap-1 mt-1 ${isSent ? "justify-end" : "justify-start"}`}>
+                          {Object.entries(
+                            msg.reactions.reduce((acc, curr) => {
+                              acc[curr.emoji] = (acc[curr.emoji] || 0) + 1;
+                              return acc;
+                            }, {}),
+                          ).map(([emoji, count]) => {
+                            const hasReacted = msg.reactions.some(
+                              (r) => String(r.userId) === String(authUser?._id) && r.emoji === emoji,
+                            );
+                            return (
+                              <div
+                                key={emoji}
+                                onClick={(e) => handleReactionBadgeClick(e, msg._id, emoji, hasReacted)}
+                                className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs cursor-pointer transition-all ${
+                                  hasReacted
+                                    ? "bg-violet-500/30 text-violet-300"
+                                    : "bg-white/10 text-gray-400 hover:bg-white/20"
+                                }`}
+                              >
+                                <span>{emoji}</span>
+                                {count > 1 && <span>{count}</span>}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
 
-                    {/* Pin Indicator */}
-                    {msg.isPinned && (
-                      <div className={`flex items-center gap-1 mt-1 text-[10px] text-violet-400 font-bold bg-violet-500/10 w-fit px-1.5 py-0.5 rounded-md transition-all ${isSent ? "self-end" : "self-start"}`}>
-                        <Pin className="w-2.5 h-2.5 rotate-45" />
-                        Pinned
-                      </div>
-                    )}
-                  </div>
+                      {/* Pin Indicator */}
+                      {msg.isPinned && (
+                        <div className={`flex items-center gap-1 mt-1 text-[10px] text-violet-400 font-bold bg-violet-500/10 w-fit px-1.5 py-0.5 rounded-md transition-all ${isSent ? "self-end" : "self-start"}`}>
+                          <Pin className="w-2.5 h-2.5 rotate-45" />
+                          Pinned
+                        </div>
+                      )}
+                    </div>
 
-                {/* Avatar */}
-                <img
-                  src={
-                    isSent
-                      ? authUser?.profilePic || assets.avatar_icon
-                      : selectedUser?.profilePic || assets.avatar_icon
-                  }
-                  alt="avatar"
-                  className="w-8 h-8 rounded-full object-cover flex-shrink-0 self-start mt-0.5"
-                />
-              </div>
+                  {/* Avatar */}
+                  <img
+                    src={
+                      isSent
+                        ? authUser?.profilePic || assets.avatar_icon
+                        : selectedUser?.profilePic || assets.avatar_icon
+                    }
+                    alt="avatar"
+                    className="w-8 h-8 rounded-full object-cover flex-shrink-0 self-start mt-0.5"
+                  />
+                </div>
+              </React.Fragment>
             );
           })}
           <div ref={scrollEnd}></div>
@@ -723,8 +737,8 @@ const ChatContainer = () => {
       </div>
 
       {/* input area */}
-      <div className={`p-4 md:p-6 border-t border-white/10 backdrop-blur-xl flex-shrink-0 relative transition-all duration-300 ${editingMessage ? "bg-violet-500/10 shadow-[0_-10px_20px_rgba(124,58,237,0.1)]" : "bg-[#0F0C1D]/40"}`}>
-        <div className="max-w-5xl mx-auto flex flex-col gap-2">
+      <div className={`p-4 border-t border-white/10 backdrop-blur-xl flex-shrink-0 relative transition-all duration-300 ${editingMessage ? "bg-violet-500/10 shadow-[0_-10px_20px_rgba(124,58,237,0.1)]" : "bg-[#0F0C1D]/40"}`}>
+        <div className="w-full flex flex-col gap-2">
           {isRecording || isPaused || isPreviewing ? (
             <div className="flex items-center gap-4 bg-white/5 p-2 rounded-2xl animate-in fade-in slide-in-from-bottom-2 duration-300">
               {isPreviewing ? (
@@ -917,21 +931,17 @@ const ChatContainer = () => {
                 
                 <button
                   onClick={handleSendMessage}
-                  className={`p-3 rounded-2xl transition-all duration-200 active:scale-95 flex-shrink-0 shadow-lg ${
+                  className={`p-3.5 rounded-2xl transition-all duration-200 active:scale-90 flex-shrink-0 shadow-lg ${
                     input.trim()
-                      ? "bg-violet-600 text-white hover:bg-violet-700 shadow-violet-500/20"
+                      ? "bg-violet-600 text-white hover:bg-violet-700 shadow-violet-500/30 hover:-translate-y-0.5"
                       : "bg-white/5 text-gray-500 cursor-not-allowed border border-white/5"
                   }`}
                   disabled={!input.trim()}
                 >
                   {editingMessage ? (
-                    <Check className="w-6 h-6" />
+                    <Check className="w-5 h-5" />
                   ) : (
-                    <img
-                      src={assets.send_button}
-                      alt="send"
-                      className="w-6 h-6 invert brightness-0"
-                    />
+                    <SendHorizontal className={`w-5 h-5 transition-transform ${input.trim() ? "group-hover:translate-x-0.5 group-hover:-translate-y-0.5" : ""}`} />
                   )}
                 </button>
               </div>

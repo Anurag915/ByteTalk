@@ -124,6 +124,7 @@ export const ChatProvider = ({ children }) => {
   const [isSummarizing, setIsSummarizing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState(null);
   const [isAnalyzingMessage, setIsAnalyzingMessage] = useState(false);
+  const [activeSidebarSection, setActiveSidebarSection] = useState("chats"); // chats, profile, calls, media
 
   const selectedUserRef = useRef(selectedUser);
   useEffect(() => {
@@ -491,6 +492,8 @@ export const ChatProvider = ({ children }) => {
     setAnalysisResult,
     isAnalyzingMessage,
     analyzeMessage,
+    activeSidebarSection,
+    setActiveSidebarSection,
   };
 
   return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>;

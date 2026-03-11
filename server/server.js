@@ -21,7 +21,7 @@ const server = http.createServer(app);
 //initialise socket.io server
 export const io = new Server(server, {
   cors: {
-    origin: ["https://byte-talk-frontend.vercel.app", "http://localhost:5173"],
+    origin: ["https://byte-talk-frontend.vercel.app", "http://localhost:5173", "http://localhost"],
     credentials: true,
   },
 });
@@ -121,7 +121,7 @@ app.use((req, res, next) => {
     "Content-Security-Policy",
     "default-src 'self'; " +
     "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.clerk.dev https://clerk.accounts.dev https://*.clerk.accounts.dev; " +
-    "connect-src 'self' https://*.clerk.dev https://clerk.accounts.dev https://*.clerk.accounts.dev ws://localhost:5000 wss://localhost:5000 http://localhost:5000 https://byte-talk-frontend.vercel.app; " +
+    "connect-src 'self' https://*.clerk.dev https://clerk.accounts.dev https://*.clerk.accounts.dev ws://localhost:5000 wss://localhost:5000 http://localhost:5000 http://localhost https://byte-talk-frontend.vercel.app; " +
     "img-src 'self' data: blob: https://*.clerk.dev https://clerk.accounts.dev https://*.clerk.accounts.dev https://res.cloudinary.com; " +
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
     "font-src 'self' https://fonts.gstatic.com; " +
@@ -134,7 +134,7 @@ app.use(express.json({ limit: "4mb" }));
 // app.use(cors({ origin: "*"}));
 app.use(
   cors({
-    origin: ["https://byte-talk-frontend.vercel.app", "http://localhost:5173"],
+    origin: ["https://byte-talk-frontend.vercel.app", "http://localhost:5173", "http://localhost"],
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "token"],

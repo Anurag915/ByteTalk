@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./server
+    ports:
+      - "5000:5000"
+    env_file:
+      - ./server/.env
+    restart: always
+
+  frontend:
+    build:
+      context: "./Chat Application"
+      args:
+        - VITE_BACKEND_URL=${VITE_BACKEND_URL}
+        - VITE_CLERK_PUBLISHABLE_KEY=${VITE_CLERK_PUBLISHABLE_KEY}
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: always

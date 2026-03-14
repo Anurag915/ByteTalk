@@ -16,9 +16,9 @@ export const connectQueue = async () => {
     
     console.log("RabbitMQ connected and channel 'chat_messages' created successfully.");
   } catch (error) {
-    console.error("Failed to connect to RabbitMQ, retrying in 5 seconds...", error.message);
-    // Retry connection after delay
-    setTimeout(connectQueue, 5000);
+    console.warn("Failed to connect to RabbitMQ (background queues will be disabled):", error.message);
+    // Note: If you want to force retry, uncomment the following line:
+    // setTimeout(connectQueue, 5000);
   }
 };
 

@@ -163,24 +163,52 @@ export const sendMessage = async (req, res) => {
     };
 
     // Publish to the queue
-    const queued = await publishMessage("chat_messages", payload);
+      const queued = await publishMessage("chat_messages", payload);
 
-    if (queued) {
-      // Create a temporary representation of the message to keep the frontend responsive
-      const pendingMessage = {
-        _id: `pending-${Date.now()}`,
-        senderId,
-        receiverId,
-        text,
-        image: imageUrl,
-        audio: audioUrl,
-        createdAt: new Date().toISOString(),
-      };
-      
-      res.status(202).json({ success: true, newMessage: pendingMessage });
-    } else {
-      res.status(500).json({ success: false, message: "Failed to queue message for background processing." });
-    }
+      if (queued) {
+        // Create a temporary representation of the message to keep the frontend responsive
+        const pendingMessage = {
+          _id: `pending-${Date.now()}`,
+          senderId,
+          receiverId,
+          text,
+          image: imageUrl,
+          audio: audioUrl,
+          createdAt: new Date().toISOString(),
+        };
+        
+        return res.status(202).json({ success: true, newMessage: pendingMessage });
+      } else {
+        console.warn("RabbitMQ unavailable. Falling back to native processing.");
+        
+        const newMessage = new Message({
+          senderId,
+          receiverId,
+          text,
+          image: imageUrl,
+          audio: audioUrl,
+        });
+  
+        await newMessage.save();
+  
+        // Emit to receiver
+        const receiverSocketIds = userSocketMap[receiverId];
+        if (receiverSocketIds) {
+          receiverSocketIds.forEach((socketId) => {
+            io.to(socketId).emit("newMessage", newMessage);
+          });
+        }
+  
+        // Emit to sender
+        const senderSocketIds = userSocketMap[senderId];
+        if (senderSocketIds) {
+          senderSocketIds.forEach((socketId) => {
+            io.to(socketId).emit("newMessage", newMessage);
+          });
+        }
+  
+        return res.status(201).json({ success: true, newMessage });
+      }
 
   } catch (error) {
     console.log(error);

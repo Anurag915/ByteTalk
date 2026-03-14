@@ -21,6 +21,10 @@ ByteTalk is a premium, lightning-fast chat application featuring **Clerk Authent
 - **Conversation Summary**: Summarize long chat histories into concise bullet points.
 - **Message Analysis**: Deep dive into individual messages for AI-powered insights.
 
+### 🏭 Enterprise Architecture
+- **RabbitMQ**: Robust background job queue for async processing of messages and images.
+- **Dockerized**: Fully containerized backend and frontend environments for seamless deployments.
+
 ### 🎨 WhatsApp-Style UI/UX
 - **Multi-Section Sidebar**: Navigate easily between **Chats**, **Profile**, **Calls**, and **Shared Media**.
 - **Date Grouping**: Messages are organized by date (Today, Yesterday, etc.) with modern separators.
@@ -32,11 +36,13 @@ ByteTalk is a premium, lightning-fast chat application featuring **Clerk Authent
 - **Frontend**: React.js + Tailwind CSS + Lucide React
 - **Backend**: Node.js + Express.js + Mongoose
 - **Database**: MongoDB (Atlas)
+- **Message Broker**: RabbitMQ
 - **Real-Time**: Socket.io
 - **Authentication**: Clerk SDK
 - **AI Engine**: Google Gemini (Flash 1.5)
 - **Media Storage**: Cloudinary (Image & Audio)
 - **Styling**: Vanilla CSS (Premium Glassmorphism & Micro-animations)
+- **Containerization**: Docker & Docker Compose
 
 ## 🚀 Getting Started
 
@@ -48,6 +54,20 @@ ByteTalk is a premium, lightning-fast chat application featuring **Clerk Authent
 - Cloudinary account
 
 ### Installation
+
+#### Option 1: Docker (Recommended)
+The easiest way to run the full stack (including RabbitMQ) is using Docker Compose:
+```bash
+# Clone the repository
+git clone <repo-url>
+cd ByteTalk
+
+# Start the stack
+docker-compose up --build -d
+```
+
+#### Option 2: Local Development
+If you prefer running the servers natively:
 
 ```bash
 # Clone the repository
@@ -74,13 +94,13 @@ CLOUDINARY_CLOUD_NAME=<your-name>
 CLOUDINARY_API_KEY=<your-key>
 CLOUDINARY_API_SECRET=<your-secret>
 GEMINI_API_KEY=<your-google-ai-key>
+RABBITMQ_URL=<your-rabbitmq-url>
 ```
 
 #### Frontend (`Chat Application/.env`)
 ```env
 VITE_CLERK_PUBLISHABLE_KEY=<your-clerk-publishable-key>
 VITE_BACKEND_URL=http://localhost:5000
-VITE_CLOUDINARY_CLOUD_NAME=<your-name>
 ```
 
 ### Running Locally

@@ -120,6 +120,7 @@ const ChatContainer = () => {
     analysisResult,
     setAnalysisResult,
     isAnalyzingMessage,
+    analyzeMessage,
     activeSidebarSection,
     setActiveSidebarSection,
     viewedProfile,

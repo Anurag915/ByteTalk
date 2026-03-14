@@ -1,5 +1,6 @@
 import React, { useContext } from "react";
-import { MessageSquare, Phone, Image, User, LogOut, Settings } from "lucide-react";
+import { MessageSquare, Phone, Image, User, LogOut, Settings, Activity } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { ChatContext } from "../context/ChatContext";
 import { AuthContext } from "../context/AuthContext";
 import assets from "../assets/assets";
@@ -7,6 +8,7 @@ import assets from "../assets/assets";
 const NavSidebar = () => {
   const { activeSidebarSection, setActiveSidebarSection } = useContext(ChatContext);
   const { authUser, logout } = useContext(AuthContext);
+  const navigate = useNavigate();
 
   const navItems = [
     { id: "chats", icon: MessageSquare, label: "Chats" },
@@ -63,6 +65,18 @@ const NavSidebar = () => {
           />
            <span className="absolute left-16 bg-gray-800 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
             Profile
+          </span>
+        </button>
+
+        {/* Admin Dashboard */}
+        <button
+          onClick={() => navigate("/admin")}
+          className="p-3 text-gray-500 hover:text-cyan-400 hover:bg-cyan-500/10 rounded-xl transition-all duration-300 group relative"
+          title="Admin Dashboard"
+        >
+          <Activity className="w-6 h-6" />
+          <span className="absolute left-16 bg-gray-800 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
+            System
           </span>
         </button>
 

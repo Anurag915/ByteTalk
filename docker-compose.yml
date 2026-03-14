@@ -1,12 +1,23 @@
 version: '3.8'
 
 services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    restart: always
+
   backend:
     build: ./server
     ports:
       - "5000:5000"
     env_file:
       - ./server/.env
+    environment:
+      - RABBITMQ_URL=amqp://rabbitmq:5672
+    depends_on:
+      - rabbitmq
     restart: always
 
   frontend:

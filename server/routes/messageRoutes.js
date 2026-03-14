@@ -27,6 +27,7 @@ messageRouter.put("/pin/:id", protectRoute, pinMessage);
 messageRouter.put("/unpin/:id", protectRoute, unpinMessage);
 messageRouter.delete("/:id", protectRoute, deleteMessage);
 messageRouter.post("/ai-replies", protectRoute, getAIReplies);
+messageRouter.post("/analyze", protectRoute, getAIAnalysis);
 messageRouter.get("/summarize/:userToChatId", protectRoute, getChatSummary);
 messageRouter.post("/analyze", protectRoute, getAIAnalysis);
 export default messageRouter;

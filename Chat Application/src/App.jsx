@@ -6,6 +6,7 @@ import LandingPage from "./pages/LandingPage.jsx";
 import LoginPage from "./pages/LoginPage.jsx";
 import SignUpPage from "./pages/SignUpPage.jsx";
 import ProfilePage from "./pages/ProfilePage.jsx";
+import AdminDashboard from "./pages/AdminDashboard.jsx";
 import { Toaster } from "react-hot-toast";
 import { useContext } from "react";
 import { AuthContext } from "./context/AuthContext.jsx";
@@ -61,6 +62,19 @@ const App = () => {
             <>
               <SignedIn>
                 <ProfilePage />
+              </SignedIn>
+              <SignedOut>
+                <Navigate to="/" />
+              </SignedOut>
+            </>
+          }
+        />
+        <Route
+          path="/admin"
+          element={
+            <>
+              <SignedIn>
+                <AdminDashboard />
               </SignedIn>
               <SignedOut>
                 <Navigate to="/" />

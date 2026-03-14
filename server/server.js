@@ -6,11 +6,14 @@ import exp from "constants";
 import { connectDB } from "./lib/db.js";
 import userRouter from "./routes/userRoutes.js";
 import messageRouter from "./routes/messageRoutes.js";
+import statusRouter from "./routes/statusRoutes.js";
 
 import { Server } from "socket.io";
 import { createClerkClient } from "@clerk/clerk-sdk-node";
 import User from "./models/User.js";
 import { log } from "console";
+import { connectQueue } from "./lib/rabbitmq.js";
+import { startMessageWorker } from "./workers/messageWorker.js";
 
 const clerkClient = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
 //create express app
@@ -146,9 +149,12 @@ app.use("/api/status", (req, res) => {
 });
 app.use("/api/auth", userRouter);
 app.use("/api/messages", messageRouter);
+app.use("/api/system", statusRouter);
 //connect to MongoDB
 
 await connectDB();
+await connectQueue();
+startMessageWorker(io, userSocketMap);
 
 const PORT = process.env.PORT || 5000;
 

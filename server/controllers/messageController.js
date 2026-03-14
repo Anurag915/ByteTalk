@@ -3,6 +3,7 @@ import Message from "../models/Message.js";
 import User from "../models/User.js";
 import { io, userSocketMap } from "../server.js";
 import { generateSmartReplies } from "../lib/gemini.js";
+import { publishMessage } from "../lib/rabbitmq.js";
 
 //Get all user except logged in user
 export const getUsersForSidebar = async (req, res) => {
@@ -152,20 +153,35 @@ export const sendMessage = async (req, res) => {
       audioUrl = uploadResponse.secure_url;
     }
 
-    const newMessage = await Message.create({
+    // Prepare payload for RabbitMQ
+    const payload = {
       senderId,
       receiverId,
       text,
       image: imageUrl,
       audio: audioUrl,
-    });
+    };
 
-    const receiverSocketId = userSocketMap[receiverId];
-    if (receiverSocketId) {
-      io.to(receiverSocketId).emit("newMessage", newMessage);
+    // Publish to the queue
+    const queued = await publishMessage("chat_messages", payload);
+
+    if (queued) {
+      // Create a temporary representation of the message to keep the frontend responsive
+      const pendingMessage = {
+        _id: `pending-${Date.now()}`,
+        senderId,
+        receiverId,
+        text,
+        image: imageUrl,
+        audio: audioUrl,
+        createdAt: new Date().toISOString(),
+      };
+      
+      res.status(202).json({ success: true, newMessage: pendingMessage });
+    } else {
+      res.status(500).json({ success: false, message: "Failed to queue message for background processing." });
     }
 
-    res.json({ success: true, newMessage });
   } catch (error) {
     console.log(error);
     res.json({ success: false, message: error.message });

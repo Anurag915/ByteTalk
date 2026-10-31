@@ -3,44 +3,79 @@ import Groq from "groq-sdk";
 import "dotenv/config";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const geminiModel = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
+const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-flash-latest";
+const GROQ_MODEL = process.env.GROQ_MODEL || "openai/gpt-oss-20b";
+const AI_REQUEST_TIMEOUT_MS = 15000;
+
+const geminiModel = genAI.getGenerativeModel({ model: GEMINI_MODEL });
 
 let groqClient = null;
 if (process.env.GROQ_API_KEY) {
-  groqClient = new Groq({ apiKey: process.env.GROQ_API_KEY });
+  groqClient = new Groq({
+    apiKey: process.env.GROQ_API_KEY,
+    timeout: AI_REQUEST_TIMEOUT_MS,
+    maxRetries: 1,
+  });
 }
 
-const GROQ_MODEL = "llama-3.1-8b-instant";
+const generateWithGroq = async (prompt) => {
+  if (!groqClient) {
+    throw new Error("Groq is not configured.");
+  }
+
+  const request = {
+    messages: [{ role: "user", content: prompt }],
+    model: GROQ_MODEL,
+  };
+
+  if (GROQ_MODEL.startsWith("openai/gpt-oss")) {
+    request.reasoning_effort = "low";
+    request.max_completion_tokens = 1200;
+  }
+
+  const chatCompletion = await groqClient.chat.completions.create(request);
+  const text = chatCompletion.choices[0]?.message?.content?.trim();
+
+  if (!text) {
+    throw new Error("Groq returned an empty response.");
+  }
+
+  return text;
+};
+
+const generateWithGemini = async (prompt) => {
+  const result = await geminiModel.generateContent(prompt, {
+    timeout: AI_REQUEST_TIMEOUT_MS,
+  });
+  const response = await result.response;
+  const text = response.text()?.trim();
+
+  if (!text) {
+    throw new Error("Gemini returned an empty response.");
+  }
+
+  return text;
+};
 
 /**
- * Generic function to execute a prompt with Gemini, falling back to Groq.
- * @param {string} prompt 
+ * Executes a prompt with the verified Groq model, then falls back to Gemini.
+ * @param {string} prompt
  * @returns {Promise<string>}
  */
 const generateWithFailover = async (prompt) => {
-  try {
-    const result = await geminiModel.generateContent(prompt);
-    const response = await result.response;
-    return response.text();
-  } catch (geminiError) {
-    console.error("Gemini failed:", geminiError.message || geminiError);
-    
-    if (groqClient) {
-      console.log("Switched to Groq successfully for fallback processing.");
-      try {
-        const chatCompletion = await groqClient.chat.completions.create({
-          messages: [{ role: "user", content: prompt }],
-          model: GROQ_MODEL,
-        });
-        return chatCompletion.choices[0]?.message?.content || "";
-      } catch (groqError) {
-        console.error("Groq also failed:", groqError.message || groqError);
-        throw new Error("Both Gemini and Groq AI providers failed.");
-      }
-    } else {
-      console.error("Groq fallback not configured (missing GROQ_API_KEY).");
-      throw geminiError;
+  if (groqClient) {
+    try {
+      return await generateWithGroq(prompt);
+    } catch (groqError) {
+      console.error("Groq failed; trying Gemini:", groqError.message || groqError);
     }
+  }
+
+  try {
+    return await generateWithGemini(prompt);
+  } catch (geminiError) {
+    console.error("Gemini also failed:", geminiError.message || geminiError);
+    throw new Error("All configured AI providers failed.");
   }
 };
 
@@ -104,7 +139,7 @@ export const generateChatSummary = async (messages) => {
     return await generateWithFailover(prompt);
   } catch (error) {
     console.error("Error generating chat summary:", error);
-    return "Failed to generate summary. Please try again later.";
+    throw new Error("Unable to generate the chat summary right now.");
   }
 };
 

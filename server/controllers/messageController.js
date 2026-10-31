@@ -457,7 +457,10 @@ export const getChatSummary = async (req, res) => {
     res.json({ success: true, summary });
   } catch (error) {
     console.error("Error in getChatSummary controller:", error);
-    res.status(500).json({ success: false, message: error.message });
+    res.status(502).json({
+      success: false,
+      message: error.message || "The AI summary service is temporarily unavailable.",
+    });
   }
 };
 

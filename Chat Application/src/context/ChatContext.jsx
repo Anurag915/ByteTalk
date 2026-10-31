@@ -365,12 +365,18 @@ export const ChatProvider = ({ children }) => {
     if (!selectedUser) return;
     setIsSummarizing(true);
     try {
-      const { data } = await axios.get(`/api/messages/summarize/${selectedUser._id}`);
+      const { data } = await axios.get(
+        `/api/messages/summarize/${selectedUser._id}`,
+        { timeout: 35000 },
+      );
       if (data.success) {
         setChatSummary(data.summary);
       }
     } catch (error) {
-      toast.error(error?.response?.data?.message || "Failed to generate summary");
+      const message = error.code === "ECONNABORTED"
+        ? "The AI summary request timed out. Please try again."
+        : error?.response?.data?.message || "Failed to generate summary";
+      toast.error(message);
     } finally {
       setIsSummarizing(false);
     }

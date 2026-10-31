@@ -24,7 +24,7 @@ const SummaryPanel = () => {
             </div>
             <div>
               <h2 className="text-lg font-bold text-white tracking-tight">AI Summary</h2>
-              <p className="text-[10px] text-violet-400/70 font-semibold uppercase tracking-widest">Powered by Gemini</p>
+              <p className="text-[10px] text-violet-400/70 font-semibold uppercase tracking-widest">AI generated</p>
             </div>
           </div>
           <button 

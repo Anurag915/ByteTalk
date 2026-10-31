@@ -17,7 +17,7 @@ const NavSidebar = () => {
   ];
 
   return (
-    <div className="w-[75px] h-full bg-[#1A162E] flex flex-col items-center py-6 border-r border-white/5 flex-shrink-0 z-20">
+    <div className="z-20 flex h-full w-[75px] flex-shrink-0 flex-col items-center border-r border-white/[0.07] bg-[#0d0a12] py-6">
       {/* Top Section: Nav Icons */}
       <div className="flex flex-col gap-6 flex-1 w-full items-center">
         {navItems.map((item) => (

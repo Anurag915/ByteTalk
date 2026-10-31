@@ -9,13 +9,22 @@ import { ClerkProvider } from "@clerk/clerk-react";
 
 const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
+const clerkLocalization = {
+  formFieldInputPlaceholder__firstName: "e.g. Anika",
+  formFieldInputPlaceholder__lastName: "e.g. Sharma",
+};
+
 if (!PUBLISHABLE_KEY) {
   throw new Error("Missing Publishable Key");
 }
 
 createRoot(document.getElementById("root")).render(
   <BrowserRouter>
-    <ClerkProvider publishableKey={PUBLISHABLE_KEY} afterSignOutUrl="/">
+    <ClerkProvider
+      publishableKey={PUBLISHABLE_KEY}
+      afterSignOutUrl="/"
+      localization={clerkLocalization}
+    >
       <AuthProvider>
         <ChatProvider>
           <App />

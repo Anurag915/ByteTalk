@@ -15,7 +15,7 @@ const SummaryPanel = () => {
 
   return (
     <div className={`fixed inset-y-0 right-0 w-[400px] z-[50] transition-all duration-500 ease-in-out transform ${chatSummary || isSummarizing ? "translate-x-0" : "translate-x-full"}`}>
-      <div className="h-full bg-[#16122C]/95 backdrop-blur-2xl border-l border-white/10 shadow-2xl flex flex-col">
+      <div className="h-full bg-[#100d15]/95 backdrop-blur-2xl border-l border-white/[0.08] shadow-2xl flex flex-col">
         {/* Header */}
         <div className="p-6 border-b border-white/5 flex items-center justify-between bg-gradient-to-r from-violet-500/10 to-transparent">
           <div className="flex items-center gap-3">
@@ -24,7 +24,7 @@ const SummaryPanel = () => {
             </div>
             <div>
               <h2 className="text-lg font-bold text-white tracking-tight">AI Summary</h2>
-              <p className="text-[10px] text-violet-400/70 font-semibold uppercase tracking-widest">Powered by Gemini</p>
+              <p className="text-[10px] text-violet-400/70 font-semibold uppercase tracking-widest">AI generated</p>
             </div>
           </div>
           <button 

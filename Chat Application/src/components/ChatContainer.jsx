@@ -46,10 +46,10 @@ const AudioMessage = ({ src, isSent, formatMessageTime, createdAt, onContextMenu
     <div 
       onContextMenu={onContextMenu}
       onClick={(e) => e.stopPropagation()}
-      className={`p-3 rounded-2xl break-words shadow-sm transition-all cursor-context-menu min-w-[240px] ${
+      className={`min-w-[240px] rounded-2xl border p-3 break-words shadow-lg transition-all cursor-context-menu ${
       isSent
-        ? "bg-violet-600 text-white rounded-tr-none hover:bg-violet-700"
-        : "bg-white/10 text-gray-100 rounded-tl-none border border-white/5"
+        ? "rounded-br-md border-violet-400/20 bg-gradient-to-br from-violet-600 to-indigo-600 text-white shadow-violet-950/20"
+        : "rounded-bl-md border-white/[0.07] bg-[#191526] text-gray-100 shadow-black/10"
     }`}>
       <div className="flex items-center gap-3">
         <button 
@@ -140,6 +140,8 @@ const ChatContainer = () => {
   const [previewDuration, setPreviewDuration] = useState(0);
   const [previewCurrentTime, setPreviewCurrentTime] = useState(0);
   const [previewUrl, setPreviewUrl] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+  const [isSendingImage, setIsSendingImage] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [showPinDuration, setShowPinDuration] = useState(null); // messageId
   const [selectedDuration, setSelectedDuration] = useState(undefined);
@@ -449,22 +451,57 @@ const ChatContainer = () => {
 
   //handle sending the image
 
-  const handleSendImage = async (e) => {
+  const handleSendImage = (e) => {
     const file = e.target.files[0];
     if (!file || !file.type.startsWith("image/")) {
-      toast.error("select an image file");
+      toast.error("Select a valid image file");
+      e.target.value = "";
       return;
     }
+
     const reader = new FileReader();
-    reader.onloadend = async () => {
-      await sendMessage({ image: reader.result });
+    reader.onloadend = () => {
+      setImagePreview({
+        src: reader.result,
+        name: file.name,
+        size: file.size,
+      });
+      e.target.value = "";
+    };
+    reader.onerror = () => {
+      toast.error("Could not preview this image");
       e.target.value = "";
     };
     reader.readAsDataURL(file);
   };
 
+  const cancelImagePreview = () => {
+    if (isSendingImage) return;
+    setImagePreview(null);
+  };
+
+  const sendPreviewedImage = async () => {
+    if (!imagePreview || isSendingImage) return;
+
+    setIsSendingImage(true);
+    try {
+      const sent = await sendMessage({
+        image: imagePreview.src,
+        text: input.trim() || undefined,
+      });
+      if (sent) {
+        setImagePreview(null);
+        setInput("");
+        setSmartReplies([]);
+      }
+    } finally {
+      setIsSendingImage(false);
+    }
+  };
+
   useEffect(() => {
     if (selectedUser) {
+      setImagePreview(null);
       getMessages(selectedUser._id);
     }
   }, [selectedUser]);
@@ -478,29 +515,88 @@ const ChatContainer = () => {
   const isUserTyping = selectedUser && typingUsers[selectedUser._id];
 
   return selectedUser ? (
-    <div className="flex flex-col h-full bg-transparent overflow-hidden">
+    <div className="chat-surface relative flex h-full flex-col overflow-hidden bg-[#09070d]">
+      {imagePreview && (
+        <div className="absolute inset-0 z-[80] flex flex-col bg-[#0b141a] animate-in fade-in duration-200">
+          <div className="flex min-h-[64px] items-center gap-4 border-b border-white/[0.08] bg-[#202c33] px-4 py-3 shadow-lg md:px-6">
+            <button
+              type="button"
+              onClick={cancelImagePreview}
+              disabled={isSendingImage}
+              className="flex h-10 w-10 items-center justify-center rounded-full text-white/70 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+              title="Close image preview"
+            >
+              <X className="h-5 w-5" />
+            </button>
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-white">Preview</p>
+              <p className="truncate text-xs text-white/45">{imagePreview.name}</p>
+            </div>
+          </div>
+
+          <div className="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden bg-[#111b21] p-5 md:p-8">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.035),transparent_55%)]" />
+            <img
+              src={imagePreview.src}
+              alt="Selected image preview"
+              className="relative max-h-full max-w-full object-contain shadow-2xl shadow-black/40"
+            />
+          </div>
+
+          <div className="border-t border-white/[0.08] bg-[#202c33] px-4 py-3 md:px-6 md:py-4">
+            <div className="mx-auto flex w-full max-w-3xl items-center gap-3">
+              <div className="flex min-w-0 flex-1 items-center rounded-2xl bg-[#2a3942] px-4 py-1.5 shadow-inner">
+                <input
+                  type="text"
+                  value={input}
+                  onChange={handleInputChange}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !isSendingImage) sendPreviewedImage();
+                  }}
+                  placeholder="Add a caption..."
+                  className="w-full border-none bg-transparent py-2.5 text-sm text-white outline-none placeholder:text-white/40"
+                  autoFocus
+                />
+              </div>
+              <button
+                type="button"
+                onClick={sendPreviewedImage}
+                disabled={isSendingImage}
+                className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-[#00a884] text-white shadow-lg shadow-black/30 transition hover:scale-105 hover:bg-[#06b894] active:scale-95 disabled:cursor-wait disabled:opacity-60 disabled:hover:scale-100"
+                title="Send image"
+              >
+                <SendHorizontal className={`h-5 w-5 ${isSendingImage ? "animate-pulse" : ""}`} />
+              </button>
+            </div>
+            <p className="mx-auto mt-2 max-w-3xl truncate px-1 text-[11px] text-white/35">
+              {isSendingImage ? "Sending image..." : `${(imagePreview.size / 1024).toFixed(1)} KB`}
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
-      <div className="p-4 border-b border-white/10 flex justify-between items-center backdrop-blur-md z-10">
+      <div className="z-10 flex min-h-[72px] items-center justify-between border-b border-white/[0.07] bg-[#0e0b18]/90 px-4 py-3 backdrop-blur-xl md:px-6">
         {/* Left: User Info Header */}
         <div 
-          className="flex items-center gap-2 cursor-pointer group"
+          className="group flex cursor-pointer items-center gap-3 rounded-xl pr-3 transition-colors hover:bg-white/[0.03]"
           onClick={() => {
             setIsRightPanelOpen(true);
           }}
         >
           <img
             src={selectedUser.profilePic || assets.avatar_icon}
-            className="w-10 h-10 rounded-full object-cover transition-transform group-hover:scale-105"
+            className="h-11 w-11 rounded-full border border-white/10 object-cover ring-4 ring-white/[0.025] transition-transform group-hover:scale-[1.03]"
             alt="profile"
           />
           <div>
-            <p className="text-white font-medium flex items-center gap-2 group-hover:text-violet-400 transition-colors">
+            <p className="flex items-center gap-2 text-sm font-medium text-white transition-colors group-hover:text-violet-300">
               {selectedUser.fullName}
               {onlineUsers.includes(selectedUser._id) && (
-                <span className="w-2.5 h-2.5 rounded-full bg-green-500 border-2 border-[#0F0C1D]"></span>
+                <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)]"></span>
               )}
             </p>
-            <p className="text-xs text-neutral-400">
+            <p className={`mt-0.5 text-xs ${isUserTyping ? "text-violet-300" : "text-white/35"}`}>
               {onlineUsers.includes(selectedUser._id)
                 ? isUserTyping
                   ? "typing..."
@@ -511,19 +607,21 @@ const ChatContainer = () => {
         </div>
 
         {/* Right: Icons */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
           <button
             onClick={summarizeChat}
             disabled={isSummarizing}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+            className={`group flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-semibold transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-300/70 ${
               isSummarizing
-                ? "bg-violet-500/10 text-violet-400 cursor-not-allowed"
-                : "bg-violet-500/20 text-violet-300 hover:bg-violet-500/30 border border-violet-500/30"
+                ? "cursor-not-allowed border-violet-400/10 bg-violet-500/10 text-violet-300/70"
+                : "border-violet-300/30 bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 text-white shadow-lg shadow-violet-950/40 hover:-translate-y-0.5 hover:border-violet-200/50 hover:brightness-110 hover:shadow-xl hover:shadow-violet-950/50 active:translate-y-0 active:scale-[0.98]"
             }`}
             title="Summarize conversation"
           >
-            <Sparkles className={`w-3.5 h-3.5 ${isSummarizing ? "animate-spin" : ""}`} />
-            {isSummarizing ? "Summarizing..." : "Summarize Chat"}
+            <span className={`flex h-6 w-6 items-center justify-center rounded-lg ${isSummarizing ? "bg-violet-400/10" : "bg-white/15"}`}>
+              <Sparkles className={`h-4 w-4 ${isSummarizing ? "animate-spin" : "transition-transform group-hover:rotate-12 group-hover:scale-110"}`} />
+            </span>
+            {isSummarizing ? "Creating summary..." : "Summarize with AI"}
           </button>
           <img
             onClick={() => setSelectedUser(null)}
@@ -536,9 +634,9 @@ const ChatContainer = () => {
 
       {/* Pinned Messages Header - Moved outside padded area for better alignment */}
       {messages.some((m) => m.isPinned) && (
-        <div className="z-[5] border-b border-white/5 group/pinned">
+        <div className="group/pinned z-[5] border-b border-white/[0.06]">
           <div
-            className={`bg-[#1A162E]/40 backdrop-blur-md transition-all duration-300 ${
+            className={`bg-[#100d1c]/85 backdrop-blur-md transition-all duration-300 ${
               isPinnedExpanded ? "pb-2" : ""
             }`}
           >
@@ -613,9 +711,9 @@ const ChatContainer = () => {
       )}
 
       {/* chat area */}
-      <div className="flex-1 overflow-y-auto p-4 md:p-6 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent relative flex flex-col">
+      <div className="relative flex flex-1 flex-col overflow-y-auto px-4 py-5 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-white/10 md:px-7 md:py-6">
 
-        <div className="flex flex-col gap-4">
+        <div className="mx-auto flex w-full max-w-4xl flex-col gap-3">
           {messages.map((msg, index) => {
             const isSent = String(msg.senderId) === String(authUser?._id);
             const currentDate = new Date(msg.createdAt).toDateString();
@@ -625,15 +723,15 @@ const ChatContainer = () => {
             return (
               <React.Fragment key={msg._id}>
                 {showDateSeparator && (
-                  <div className="flex justify-center my-6 sticky top-2 z-[2]">
-                    <span className="bg-[#1A162E]/80 backdrop-blur-md text-gray-400 text-[11px] font-bold px-4 py-1.5 rounded-full border border-white/5 shadow-sm uppercase tracking-wider">
+                  <div className="sticky top-2 z-[2] my-6 flex justify-center">
+                    <span className="rounded-full border border-white/[0.06] bg-[#151121]/90 px-3 py-1.5 text-[10px] font-medium uppercase tracking-[0.14em] text-white/35 shadow-sm backdrop-blur-md">
                       {formatDateSeparator(msg.createdAt)}
                     </span>
                   </div>
                 )}
                 <div
                   ref={el => messageRefs.current[msg._id] = el}
-                  className={`flex gap-3 transition-all duration-500 ${
+                  className={`flex gap-2.5 transition-all duration-500 ${
                     isSent
                       ? "flex-row justify-end"
                       : "flex-row-reverse justify-end"
@@ -641,13 +739,13 @@ const ChatContainer = () => {
                 >
                   {/* Message Content */}
                   <div
-                    className={`flex flex-col max-w-[80%] md:max-w-[70%] ${isSent ? "items-end" : "items-start"}`}
+                    className={`flex max-w-[84%] flex-col md:max-w-[68%] ${isSent ? "items-end" : "items-start"}`}
                     >
                       {msg.image ? (
                         <div className="relative group">
                           <img
                             src={msg.image}
-                            className="rounded-2xl border border-white/10 shadow-lg mb-1 max-h-80 object-cover cursor-pointer hover:brightness-90 transition-all"
+                            className="mb-1 max-h-80 cursor-pointer rounded-2xl border border-white/10 object-cover shadow-xl shadow-black/20 transition-all hover:brightness-90"
                             alt="message"
                             onContextMenu={(e) => handleMessageContextMenu(e, msg, isSent)}
                             onClick={(e) => e.stopPropagation()}
@@ -665,17 +763,17 @@ const ChatContainer = () => {
                         <div
                           onContextMenu={(e) => handleMessageContextMenu(e, msg, isSent)}
                           onClick={(e) => e.stopPropagation()}
-                          className={`p-3.5 text-sm rounded-2xl break-words shadow-sm transition-all cursor-context-menu ${
+                          className={`rounded-2xl border px-3.5 py-2.5 text-sm leading-5 break-words shadow-lg transition-all cursor-context-menu ${
                             isSent
-                              ? "bg-violet-600 text-white rounded-tr-none hover:bg-violet-700 cursor-pointer"
-                              : "bg-white/10 text-gray-100 rounded-tl-none border border-white/5"
+                              ? "cursor-pointer rounded-br-md border-violet-400/20 bg-gradient-to-br from-violet-600 to-indigo-600 text-white shadow-violet-950/20 hover:brightness-110"
+                              : "rounded-bl-md border-white/[0.07] bg-[#191526] text-gray-100 shadow-black/10 hover:bg-[#1d182c]"
                           }`}
                         >
                           {msg.text}
                         </div>
                       )}
                       {(msg.image || msg.text || msg.audio) && (
-                        <p className={`text-[10px] text-gray-400 mt-1.5 px-1 ${isSent ? "text-right" : "text-left"}`}>
+                        <p className={`mt-1.5 px-1 text-[10px] text-white/30 ${isSent ? "text-right" : "text-left"}`}>
                           {formatMessageTime(msg.createdAt)}
                         </p>
                       )}
@@ -727,7 +825,7 @@ const ChatContainer = () => {
                         : selectedUser?.profilePic || assets.avatar_icon
                     }
                     alt="avatar"
-                    className="w-8 h-8 rounded-full object-cover flex-shrink-0 self-start mt-0.5"
+                    className="mt-0.5 h-7 w-7 flex-shrink-0 self-start rounded-full border border-white/[0.08] object-cover"
                   />
                 </div>
               </React.Fragment>
@@ -738,8 +836,8 @@ const ChatContainer = () => {
       </div>
 
       {/* input area */}
-      <div className={`p-4 border-t border-white/10 backdrop-blur-xl flex-shrink-0 relative transition-all duration-300 ${editingMessage ? "bg-violet-500/10 shadow-[0_-10px_20px_rgba(124,58,237,0.1)]" : "bg-[#0F0C1D]/40"}`}>
-        <div className="w-full flex flex-col gap-2">
+      <div className={`relative flex-shrink-0 border-t border-white/[0.07] px-4 py-3 backdrop-blur-xl transition-all duration-300 md:px-6 md:py-4 ${editingMessage ? "bg-violet-500/[0.08] shadow-[0_-10px_30px_rgba(124,58,237,0.08)]" : "bg-[#0e0b18]/90"}`}>
+        <div className="mx-auto flex w-full max-w-4xl flex-col gap-2">
           {isRecording || isPaused || isPreviewing ? (
             <div className="flex items-center gap-4 bg-white/5 p-2 rounded-2xl animate-in fade-in slide-in-from-bottom-2 duration-300">
               {isPreviewing ? (
@@ -864,9 +962,9 @@ const ChatContainer = () => {
                   </button>
                 </div>
               )}
-              
+
               {/* Smart Replies */}
-              {!input.trim() && !editingMessage && smartReplies.length > 0 && (
+              {!imagePreview && !input.trim() && !editingMessage && smartReplies.length > 0 && (
                 <div className="flex flex-wrap gap-2 mb-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
                   {smartReplies.map((reply, idx) => (
                     <button
@@ -875,7 +973,7 @@ const ChatContainer = () => {
                         setInput(reply);
                         setSmartReplies([]);
                       }}
-                      className="px-4 py-2 rounded-full bg-violet-500/10 border border-violet-500/20 text-violet-300 text-xs font-semibold hover:bg-violet-500/20 hover:border-violet-500/30 transition-all active:scale-95 shadow-sm"
+                      className="rounded-full border border-violet-400/15 bg-violet-400/[0.07] px-3.5 py-1.5 text-xs font-medium text-violet-200 shadow-sm transition-all hover:border-violet-400/25 hover:bg-violet-400/[0.12] active:scale-95"
                     >
                       {reply}
                     </button>
@@ -883,9 +981,9 @@ const ChatContainer = () => {
                 </div>
               )}
               
-              <div className="flex items-center gap-3">
-                <div className={`flex-1 flex items-center bg-white/5 border px-4 py-1.5 rounded-2xl transition-all duration-300 ${
-                  editingMessage ? "border-violet-500/50 shadow-[0_0_15px_rgba(124,58,237,0.1)]" : "border-white/10 focus-within:border-violet-500/50"
+              <div className={`${imagePreview ? "hidden" : "flex"} items-center gap-2.5`}>
+                <div className={`flex flex-1 items-center rounded-2xl border bg-[#171323] px-3 py-1 transition-all duration-300 ${
+                  editingMessage ? "border-violet-400/40 shadow-[0_0_20px_rgba(124,58,237,0.08)]" : "border-white/[0.08] focus-within:border-violet-400/35 focus-within:bg-[#1a1628]"
                 }`}>
                   <input
                     onChange={handleInputChange}
@@ -893,7 +991,7 @@ const ChatContainer = () => {
                     onKeyDown={(e) =>
                       e.key === "Enter" ? handleSendMessage(e) : null
                     }
-                    className="flex-1 text-sm py-2.5 border-none bg-transparent outline-none text-white placeholder-white/30"
+                    className="flex-1 border-none bg-transparent py-2.5 text-sm text-white outline-none placeholder-white/25"
                     type="text"
                     placeholder={editingMessage ? "Edit your message..." : "Type your message..."}
                   />
@@ -932,10 +1030,10 @@ const ChatContainer = () => {
                 
                 <button
                   onClick={handleSendMessage}
-                  className={`p-3.5 rounded-2xl transition-all duration-200 active:scale-90 flex-shrink-0 shadow-lg ${
+                  className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl transition-all duration-200 active:scale-90 ${
                     input.trim()
-                      ? "bg-violet-600 text-white hover:bg-violet-700 shadow-violet-500/30 hover:-translate-y-0.5"
-                      : "bg-white/5 text-gray-500 cursor-not-allowed border border-white/5"
+                      ? "bg-gradient-to-br from-violet-500 to-indigo-600 text-white shadow-lg shadow-violet-950/40 hover:-translate-y-0.5 hover:brightness-110"
+                      : "cursor-not-allowed border border-white/[0.06] bg-white/[0.03] text-white/20"
                   }`}
                   disabled={!input.trim()}
                 >
@@ -954,7 +1052,7 @@ const ChatContainer = () => {
       {/* Emoji Reaction Picker Overlay */}
       {reactionPicker && (
         <div
-          className="fixed z-[100] bg-[#1A162E] border border-white/10 p-2 rounded-2xl shadow-2xl flex gap-2 animate-in fade-in zoom-in duration-200"
+          className="fixed z-[100] bg-[#111017] border border-white/[0.08] p-2 rounded-2xl shadow-2xl flex gap-2 animate-in fade-in zoom-in duration-200"
           style={{
             top: reactionPicker.y + 80 > window.innerHeight 
               ? (window.innerHeight - 80 - 10) 
@@ -978,7 +1076,7 @@ const ChatContainer = () => {
       {/* Pin Duration Selector */}
       {showPinDuration && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-[#1A162E] border border-white/20 p-6 rounded-3xl shadow-2xl max-w-sm w-full animate-in zoom-in-95 duration-200">
+          <div className="bg-[#111017] border border-white/[0.1] p-6 rounded-3xl shadow-2xl max-w-sm w-full animate-in zoom-in-95 duration-200">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 rounded-full bg-violet-500/20 flex items-center justify-center">
                 <Pin className="w-5 h-5 text-violet-400" />
@@ -1056,7 +1154,7 @@ const ChatContainer = () => {
             }}
           />
           <div
-            className="fixed z-[150] bg-[#1A162E] border border-white/20 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden animate-in min-w-[220px] max-h-[85vh] overflow-y-auto scrollbar-none"
+            className="fixed z-[150] bg-[#111017] border border-white/[0.1] rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden animate-in min-w-[220px] max-h-[85vh] overflow-y-auto scrollbar-none"
             style={{
               top: actionMenu.y + 350 > window.innerHeight 
                 ? Math.max(10, window.innerHeight - 350 - 20) 
@@ -1192,7 +1290,7 @@ const ChatContainer = () => {
       {/* Remove Reaction Popover */}
       {removePopover && (
         <div
-          className="fixed z-[100] bg-[#1A162E] border border-white/10 rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200"
+          className="fixed z-[100] bg-[#111017] border border-white/[0.08] rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200"
           style={{
             top: Math.min(removePopover.y + 10, window.innerHeight - 80),
             left: Math.min(removePopover.x, window.innerWidth - 120),
@@ -1215,7 +1313,7 @@ const ChatContainer = () => {
       {/* AI Analysis Result Modal */}
       {(analysisResult || isAnalyzingMessage) && (
         <div className="fixed inset-0 z-[250] flex items-center justify-center bg-black/70 backdrop-blur-md p-4 animate-in fade-in duration-300">
-          <div className="bg-[#1A162E]/90 border border-white/20 p-8 rounded-[2rem] shadow-2xl max-w-lg w-full relative overflow-hidden group">
+          <div className="bg-[#111017]/95 border border-white/[0.1] p-8 rounded-[2rem] shadow-2xl max-w-lg w-full relative overflow-hidden group">
             {/* Background Glow */}
             <div className="absolute -top-24 -right-24 w-48 h-48 bg-amber-500/10 rounded-full blur-3xl group-hover:bg-amber-500/20 transition-all duration-700"></div>
             
@@ -1271,9 +1369,16 @@ const ChatContainer = () => {
       )}
     </div>
   ) : (
-    <div className="flex flex-col items-center justify-center gap-2 text-gray-500 bg-white/10 max-md:hidden h-full p-4">
-      <img src={assets.logo_icon} alt="logo" className="w-16" />
-      <p>Chat anytime, anywhere</p>
+    <div className="chat-surface relative hidden h-full flex-col items-center justify-center overflow-hidden bg-[#09070d] p-8 text-center md:flex">
+      <div className="absolute h-72 w-72 rounded-full bg-violet-600/10 blur-[100px]" />
+      <div className="relative flex max-w-sm flex-col items-center">
+        <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl border border-white/[0.08] bg-white/[0.04] shadow-2xl shadow-black/30">
+          <img src={assets.logo_icon} alt="ByteTalk" className="w-10" />
+        </div>
+        <h2 className="text-2xl font-medium tracking-tight text-white">Start a conversation</h2>
+        <p className="mt-3 text-sm leading-6 text-white/35">Choose someone from your chat list to view messages, share media, or send a voice note.</p>
+        <div className="mt-7 rounded-full border border-white/[0.07] bg-white/[0.03] px-4 py-2 text-xs text-white/30">Your messages will appear here</div>
+      </div>
     </div>
   );
 };

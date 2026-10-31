@@ -23,7 +23,7 @@ const MessageInfo = () => {
 
   return (
     <div
-      className={`fixed right-0 top-0 h-full w-80 bg-[#0F0C1D]/95 backdrop-blur-xl border-l border-white/10 z-[150] shadow-2xl transition-transform duration-500 ease-in-out ${
+      className={`fixed right-0 top-0 h-full w-80 bg-[#0b090f]/95 backdrop-blur-xl border-l border-white/[0.08] z-[150] shadow-2xl transition-transform duration-500 ease-in-out ${
         isMessageInfoOpen ? "translate-x-0" : "translate-x-full"
       }`}
     >

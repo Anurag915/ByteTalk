@@ -23,7 +23,7 @@ const RightSidebar = () => {
       )}
 
       <div
-        className={`fixed top-0 right-0 h-full w-full sm:w-[380px] bg-[#0F0C1D] border-l border-white/10 text-white flex flex-col z-50 transition-transform duration-300 ease-in-out shadow-2xl ${
+        className={`fixed top-0 right-0 h-full w-full sm:w-[380px] bg-[#0b090f] border-l border-white/[0.08] text-white flex flex-col z-50 transition-transform duration-300 ease-in-out shadow-2xl ${
           selectedUser && isRightPanelOpen
             ? "translate-x-0"
             : "translate-x-full"

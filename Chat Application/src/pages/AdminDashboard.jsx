@@ -32,14 +32,14 @@ const AdminDashboard = () => {
 
   if (isCheckingAuth || loading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-[#0E0B14]">
+      <div className="flex items-center justify-center h-screen bg-[#07060a]">
         <Loader2 className="w-10 h-10 animate-spin text-violet-500" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#0e0b14] to-[#1a1525] text-white p-8">
+    <div className="min-h-screen bg-gradient-to-b from-[#07060a] to-[#100d15] text-white p-8">
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center gap-4 mb-8">
           <Link

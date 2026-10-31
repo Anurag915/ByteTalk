@@ -13,7 +13,7 @@ const AuthLayout = ({ mode, children }) => {
   const isSignUp = mode === "sign-up";
 
   return (
-    <main className="auth-page relative h-full overflow-y-auto bg-[#090713] text-white">
+    <main className="auth-page relative h-full overflow-y-auto bg-[#07060a] text-white">
       <div className="landing-grid fixed inset-0 pointer-events-none opacity-30" />
       <div className="relative z-10 grid min-h-full lg:grid-cols-[1.05fr_0.95fr]">
         <section className="relative hidden overflow-hidden border-r border-white/[0.07] p-10 lg:flex lg:flex-col lg:justify-between xl:p-14">
@@ -59,7 +59,7 @@ const AuthLayout = ({ mode, children }) => {
               <button onClick={() => navigate("/")} className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm text-white/45 transition hover:bg-white/[0.05] hover:text-white"><ArrowLeft className="h-4 w-4" /> Home</button>
             </div>
 
-            <div className="rounded-[1.75rem] border border-white/10 bg-[#151126]/90 p-6 shadow-[0_28px_90px_rgba(0,0,0,0.45)] backdrop-blur-2xl sm:p-8">
+            <div className="rounded-[1.75rem] border border-white/[0.08] bg-[#111017]/95 p-6 shadow-[0_28px_90px_rgba(0,0,0,0.5)] backdrop-blur-2xl sm:p-8">
               {children}
             </div>
 

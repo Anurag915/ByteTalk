@@ -181,7 +181,7 @@ export const ChatProvider = ({ children }) => {
   const sendMessage = async (messageData) => {
     if (!selectedUser) {
       toast.error("No user selected!");
-      return;
+      return false;
     }
     try {
       // messageData can now contain { text, image, audio }
@@ -203,11 +203,14 @@ export const ChatProvider = ({ children }) => {
           const [user] = newUsers.splice(userIndex, 1);
           return [user, ...newUsers];
         });
+        return true;
       } else {
         toast.error(data.message);
+        return false;
       }
     } catch (error) {
       toast.error(error?.response?.data?.message || error.message);
+      return false;
     }
   };
 

@@ -13,7 +13,7 @@ const HomePage = () => {
   const { selectedUser } = useContext(ChatContext);
 
   return (
-    <div className="w-full h-screen bg-[#0F0C1D] text-white overflow-hidden">
+    <div className="h-screen w-full overflow-hidden bg-[#07060a] text-white">
       <div className="h-full flex relative">
         <NavSidebar />
         <div className="flex-1 grid grid-cols-1 md:grid-cols-[380px_1fr] h-full">

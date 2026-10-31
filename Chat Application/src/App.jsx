@@ -14,7 +14,7 @@ import { SignedIn, SignedOut } from "@clerk/clerk-react";
 
 const App = () => {
   return (
-    <div className="bg-[url('/bgImage.svg')] bg-contain bg-center h-screen">
+    <div className="h-screen bg-[#07060a]">
       <Toaster />
       <Routes>
         <Route

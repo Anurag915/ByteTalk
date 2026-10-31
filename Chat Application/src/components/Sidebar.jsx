@@ -25,7 +25,7 @@ const Sidebar = () => {
 
   return (
     <div
-      className={`bg-white/5 h-full flex flex-col border-r border-white/10 overflow-hidden text-white transition-all duration-300 ${
+      className={`h-full flex flex-col border-r border-white/[0.07] bg-[#0b090f] overflow-hidden text-white transition-all duration-300 ${
         selectedUser ? "max-md:hidden" : ""
       }`}
     >
@@ -97,11 +97,11 @@ const ChatsSection = () => {
               <div className="relative">
                 <img
                   src={user?.profilePic || assets.avatar_icon}
-                  className="w-12 h-12 object-cover rounded-full border-2 border-[#1A162E]"
+                  className="w-12 h-12 object-cover rounded-full border-2 border-[#0b090f]"
                   alt={user.fullName}
                 />
                 {isOnline && (
-                  <span className="absolute bottom-0 right-0 block h-3.5 w-3.5 bg-green-500 border-2 border-[#1A162E] rounded-full shadow-lg"></span>
+                  <span className="absolute bottom-0 right-0 block h-3.5 w-3.5 bg-green-500 border-2 border-[#0b090f] rounded-full shadow-lg"></span>
                 )}
               </div>
 

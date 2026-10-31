@@ -2,7 +2,7 @@ import cloudinary from "../lib/cloudinary.js";
 import Message from "../models/Message.js";
 import User from "../models/User.js";
 import { io, userSocketMap } from "../server.js";
-import { generateSmartReplies } from "../lib/gemini.js";
+import { generateSmartReplies } from "../lib/aiService.js";
 import { publishMessage } from "../lib/rabbitmq.js";
 
 //Get all user except logged in user
@@ -437,7 +437,7 @@ export const getChatSummary = async (req, res) => {
     const myId = req.user._id;
 
     const Message = (await import("../models/Message.js")).default;
-    const { generateChatSummary } = await import("../lib/gemini.js");
+    const { generateChatSummary } = await import("../lib/aiService.js");
 
     // Get the last 100 messages for summarization
     const messages = await Message.find({
@@ -469,7 +469,7 @@ export const getAIAnalysis = async (req, res) => {
       return res.status(400).json({ success: false, message: "Message text is required" });
     }
 
-    const { analyzeMessageContent } = await import("../lib/gemini.js");
+    const { analyzeMessageContent } = await import("../lib/aiService.js");
     const analysis = await analyzeMessageContent(text);
     
     res.json({ success: true, analysis });

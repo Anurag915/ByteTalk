@@ -1,8 +1,48 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import Groq from "groq-sdk";
 import "dotenv/config";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
+const geminiModel = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
+
+let groqClient = null;
+if (process.env.GROQ_API_KEY) {
+  groqClient = new Groq({ apiKey: process.env.GROQ_API_KEY });
+}
+
+const GROQ_MODEL = "llama-3.1-8b-instant";
+
+/**
+ * Generic function to execute a prompt with Gemini, falling back to Groq.
+ * @param {string} prompt 
+ * @returns {Promise<string>}
+ */
+const generateWithFailover = async (prompt) => {
+  try {
+    const result = await geminiModel.generateContent(prompt);
+    const response = await result.response;
+    return response.text();
+  } catch (geminiError) {
+    console.error("Gemini failed:", geminiError.message || geminiError);
+    
+    if (groqClient) {
+      console.log("Switched to Groq successfully for fallback processing.");
+      try {
+        const chatCompletion = await groqClient.chat.completions.create({
+          messages: [{ role: "user", content: prompt }],
+          model: GROQ_MODEL,
+        });
+        return chatCompletion.choices[0]?.message?.content || "";
+      } catch (groqError) {
+        console.error("Groq also failed:", groqError.message || groqError);
+        throw new Error("Both Gemini and Groq AI providers failed.");
+      }
+    } else {
+      console.error("Groq fallback not configured (missing GROQ_API_KEY).");
+      throw geminiError;
+    }
+  }
+};
 
 /**
  * Generates three short, conversational smart replies based on the input message content.
@@ -23,20 +63,20 @@ export const generateSmartReplies = async (messageContent) => {
       Message: "${messageContent}"
     `;
 
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
+    const text = await generateWithFailover(prompt);
     
     // Split by newline and clean up
     const replies = text
       .split("\n")
       .map(reply => reply.trim())
+      // remove any markdown bullets or numbers if AI didn't follow instructions perfectly
+      .map(reply => reply.replace(/^[-*0-9.]+\s*/, ''))
       .filter(reply => reply.length > 0)
       .slice(0, 3);
       
-    return replies;
+    return replies.length > 0 ? replies : ["Okay", "Got it", "Thanks!"];
   } catch (error) {
-    console.error("Error generating smart replies with Gemini:", error);
+    console.error("Error generating smart replies:", error);
     return ["Okay", "Got it", "Thanks!"]; // Fallback replies
   }
 };
@@ -61,9 +101,7 @@ export const generateChatSummary = async (messages) => {
     Chat History:
     ${conversationText}`;
 
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    return response.text();
+    return await generateWithFailover(prompt);
   } catch (error) {
     console.error("Error generating chat summary:", error);
     return "Failed to generate summary. Please try again later.";
@@ -88,9 +126,7 @@ export const analyzeMessageContent = async (text) => {
     
     Message: "${text}"`;
 
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    return response.text();
+    return await generateWithFailover(prompt);
   } catch (error) {
     console.error("Error analyzing message content:", error);
     return "Failed to analyze message content. Please try again later.";
